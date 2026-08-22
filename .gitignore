@@ -1,0 +1,40 @@
+# ---------- Java / Maven ----------
+target/
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# ---------- IDE ----------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# ---------- Node / Frontend ----------
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# ---------- Secret & môi trường ----------
+# KHÔNG BAO GIỜ commit file .env thật. Chỉ commit .env.example
+.env
+.env.*
+!.env.example
+
+# ---------- Docker volume ----------
+.docker-data/
+
+# ---------- Log ----------
+*.log
+logs/
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db

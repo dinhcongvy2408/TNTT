@@ -1,0 +1,41 @@
+# =====================================================================
+# Môi trường DEV — chạy trên máy cá nhân.
+# Ở đây ta ưu tiên NHÌN THẤY MỌI THỨ để học và debug.
+# =====================================================================
+
+spring:
+  jpa:
+    # In câu SQL Hibernate sinh ra. Bật ở dev để bạn thấy tận mắt
+    # "một dòng code Java đẻ ra mấy câu SQL" — đây là cách phát hiện
+    # bài toán N+1 query sớm nhất.
+    show-sql: false          # đổi thành true khi cần soi
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+
+# ---------------- Swagger UI ----------------
+# Truy cập: http://localhost:8080/swagger-ui.html
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    # Sắp xếp endpoint theo tên cho dễ tìm
+    operations-sorter: method
+    tags-sorter: alpha
+
+logging:
+  level:
+    vn.tntt: DEBUG
+    # Xem Flyway chạy migration nào
+    org.flywaydb: INFO
+    # Bỏ comment 2 dòng dưới để xem giá trị tham số trong câu SQL.
+    # CẢNH BÁO: nó in ra cả số điện thoại phụ huynh và ngày sinh của trẻ.
+    # CHỈ dùng tạm khi debug, TUYỆT ĐỐI không bật ở prod (CLAUDE.md mục 6).
+    # org.hibernate.SQL: DEBUG
+    # org.hibernate.orm.jdbc.bind: TRACE
+  pattern:
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%-5level) %clr(%-40.40logger{39}){cyan} %msg%n"

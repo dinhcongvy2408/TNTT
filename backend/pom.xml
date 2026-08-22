@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Kế thừa từ spring-boot-starter-parent: nó quản lý VERSION của tất cả
+         thư viện Spring + thư viện phổ biến, nên bên dưới ta khai báo
+         dependency mà không cần ghi <version>. Đỡ xung đột version. -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.1</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>vn.tntt</groupId>
+    <artifactId>tntt-backend</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>tntt-backend</name>
+    <description>Hệ thống Quản lý Xứ đoàn Thiếu Nhi Thánh Thể</description>
+
+    <properties>
+        <java.version>21</java.version>
+        <springdoc.version>2.7.0</springdoc.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <lombok.version>1.18.36</lombok.version>
+    </properties>
+
+    <dependencies>
+        <!-- ============ Web: REST controller, Jackson, Tomcat nhúng ============ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- ============ Bean Validation: @NotBlank, @Past, @Email... ============ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- ============ JPA / Hibernate ============ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- ============ Actuator: /actuator/health cho Docker & Nginx ============ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ============ PostgreSQL driver ============ -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ============ Flyway: quản lý phiên bản schema DB ============
+             Từ Flyway 10 trở đi, mỗi loại DB nằm ở một artifact riêng,
+             nên phải khai báo THÊM flyway-database-postgresql.        -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!-- ============ Swagger UI tự sinh từ code ============ -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- ============ Lombok: bớt getter/setter/constructor lặp ============ -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- ============ MapStruct: sinh code Entity <-> DTO lúc biên dịch ============
+             Sprint 2 mới dùng, nhưng khai báo sẵn vì nó cần cấu hình
+             annotation processor (bên dưới) — dễ quên và khó debug.  -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
+
+        <!-- ============ Test ============ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ==================================================================
+             THÊM Ở CÁC SPRINT SAU (bỏ comment khi tới sprint tương ứng):
+
+             Sprint 1  spring-boot-starter-security
+                       io.jsonwebtoken:jjwt-api / jjwt-impl / jjwt-jackson
+             Sprint 3  org.apache.poi:poi-ooxml            (đọc/ghi Excel)
+             Sprint 7  spring-boot-starter-websocket
+             Test      org.testcontainers:postgresql
+             ================================================================== -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <!-- THỨ TỰ RẤT QUAN TRỌNG: lombok phải đứng TRƯỚC mapstruct,
+                         nếu không MapStruct sẽ không thấy getter/setter mà
+                         Lombok sinh ra, và báo lỗi "no property named ...". -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                    <compilerArgs>
+                        <arg>-Amapstruct.defaultComponentModel=spring</arg>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

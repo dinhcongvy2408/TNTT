@@ -1,0 +1,53 @@
+# =====================================================================
+# Môi trường DEV trên máy cá nhân.
+#   docker compose up -d      -> bật postgres + pgadmin
+#   docker compose down       -> tắt (dữ liệu vẫn còn trong volume)
+#   docker compose down -v    -> tắt VÀ XOÁ SẠCH dữ liệu
+#
+# Ở Sprint 0 ta CHƯA đóng gói backend vào Docker — chạy backend bằng
+# `mvn spring-boot:run` cho nhanh vòng lặp sửa-chạy. Sprint 8 mới thêm.
+# =====================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tntt-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Ép initdb dùng UTF-8. KHÔNG đặt LANG=vi_VN.utf8 ở bản -alpine:
+      # image alpine không có sẵn locale đó, initdb sẽ hỏng.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      # Chỉ bind vào localhost — không mở DB ra mạng LAN
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Backend chờ healthcheck này pass rồi mới kết nối
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: tntt-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  pgadmin-data:

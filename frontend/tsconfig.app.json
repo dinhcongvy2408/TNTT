@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Đường dẫn rút gọn: import { api } from '@/services/api'
+       thay vì '../../../services/api'.
+       Không dùng "baseUrl": TypeScript 6 đã đánh dấu nó deprecated;
+       đường dẫn trong "paths" nay tính tương đối với chính file này. */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    /* Kiểm tra kiểu — CLAUDE.md mục 5 yêu cầu strict mode.
+       Bản Vite mặc định KHÔNG bật, phải tự thêm.
+       strict bật một loạt: noImplicitAny, strictNullChecks... */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Ép kiểm tra khi truy cập phần tử mảng/object bằng chỉ số.
+       arr[0] sẽ có kiểu T | undefined thay vì T — hơi phiền lúc viết,
+       nhưng chặn được đúng loại lỗi "Cannot read property of undefined"
+       mà huynh trưởng gặp giữa buổi điểm danh. */
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["src"]
+}
