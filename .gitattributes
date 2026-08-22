@@ -1,0 +1,19 @@
+# Chuẩn hoá xuống dòng: repo luôn lưu LF, Windows checkout ra CRLF.
+# Nếu không có file này, Git cảnh báo "LF will be replaced by CRLF" ở mọi
+# lần add, và diff giữa máy Windows với server Linux sẽ đầy rác.
+* text=auto eol=lf
+
+# File Windows bắt buộc CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# File nhị phân — không được đụng vào
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.xlsx binary
+*.xls  binary
+*.jar  binary
