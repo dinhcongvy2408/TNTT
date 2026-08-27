@@ -90,6 +90,11 @@ public class SecurityConfig {
                         // Swagger đã bị tắt hẳn ở profile prod
                         // (springdoc.api-docs.enabled=false), nên mở ở đây chỉ
                         // có tác dụng tại môi trường dev.
+                        // Bắt tay WebSocket phải qua được filter chain HTTP.
+                        // KHÔNG phải lỗ hổng: xác thực JWT diễn ra ở khung
+                        // STOMP CONNECT ngay sau đó, xem WebSocketConfig.
+                        .requestMatchers("/ws/**").permitAll()
+
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
                                          "/v3/api-docs/**").permitAll()
 

@@ -26,7 +26,7 @@ interface MucDieuHuong {
 // huynh trưởng mở app ra là để điểm danh.
 const CAC_MUC: MucDieuHuong[] = [
   { duongDan: '/', nhan: 'Trang chủ', icon: 'trang-chu' },
-  { duongDan: '/diem-danh', nhan: 'Điểm danh', icon: 'diem-danh' },
+  { duongDan: '/truc-cong', nhan: 'Trực cổng', icon: 'diem-danh' },
   { duongDan: '/thieu-nhi', nhan: 'Thiếu nhi', icon: 'thieu-nhi' },
   { duongDan: '/lop-hoc', nhan: 'Lớp học', icon: 'lop-hoc' },
 ]

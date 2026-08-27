@@ -177,10 +177,27 @@ Trước khi implement một module, đọc file tương ứng trong `docs/`:
       quy định huynh trưởng chỉ xem được lớp mình.
       <br>2. Ghi bảng `nhat_ky_he_thong` (CLAUDE.md mục 6). Cột `nguoi_tao_id`
       mới là một nửa yêu cầu audit.
-- [ ] Sprint 4 — Hồ sơ thiếu nhi + bí tích + import Excel
-- [ ] Sprint 5 — Ghi danh & điểm danh
+- [~] Sprint 4 — Hồ sơ thiếu nhi (LÀM MỘT PHẦN 27/08/2026)
+      <br>[x] Entity ThieuNhi, CRUD, phân trang, mã tự sinh TN2026001, xoá MỀM
+      theo CLAUDE.md mục 6, màn hình /thieu-nhi.
+      <br>[ ] Bí tích, import Excel, tìm không dấu bằng chỉ mục GIN, ghi
+      nhat_ky_he_thong. Chi tiết docs/99 mục H1.
+- [~] Sprint 5 — Ghi danh & điểm danh (LÀM MỘT PHẦN 27/08/2026)
+      <br>[x] GhiDanh: xếp em vào lớp, quy tắc một em một lớp mỗi năm.
+      <br>[ ] Điểm danh hằng tuần. docs/99 mục H2.
 - [ ] Sprint 6 — Điểm số & chuyển cấp
-- [ ] Sprint 7 — Ban kỷ luật & phiếu ra cổng (WebSocket)
+- [x] **Sprint 7 — HOÀN TẤT** (27/08/2026): ban kỷ luật và phiếu ra cổng.
+      <br>ToTruc, ThanhVienToTruc, LichTruc kèm sinh lịch luân phiên theo tuần.
+      <br>PhieuRaCong: máy trạng thái CHO_RA_CONG to DA_RA_CONG hoặc HUY, một
+      chiều. Một em chỉ có một phiếu đang chờ (partial unique index).
+      <br>WebSocket STOMP, xác thực JWT ở khung CONNECT. Bản tin đẩy SAU KHI
+      transaction commit — nếu không, rollback rồi mà màn hình trực đã kêu
+      chuông cho một phiếu không tồn tại.
+      <br>Frontend: màn hình trực cổng /truc-cong với chuông báo (Web Audio,
+      không tải file mp3) và fallback polling 10 giây khi socket đứt.
+      <br>Vite phải proxy /ws với ws: true — docs/99 mục H6.
+      <br>**Còn nợ:** quyền "KY_LUAT đang trực ca" mới làm một nửa (docs/99 H4);
+      job cuối ngày tự huỷ phiếu chưa xác nhận.
 - [ ] Sprint 8 — Deploy production
       <br>**Nợ:** bật `secure(true)` cho cookie refresh token và cân nhắc
       `SameSite=None` nếu frontend/backend khác site (docs/99 mục D1); tác vụ

@@ -23,6 +23,14 @@ interface LoiTat {
 
 const CAC_LOI_TAT: LoiTat[] = [
   {
+    duongDan: '/truc-cong',
+    nhan: 'Trực cổng',
+    moTa: 'Nhận phiếu ra cổng theo thời gian thực',
+    icon: 'diem-danh',
+    sprint: 7,
+    daLam: true,
+  },
+  {
     duongDan: '/diem-danh',
     nhan: 'Điểm danh',
     moTa: 'Ghi đi lễ, đi học từng buổi',
@@ -33,10 +41,10 @@ const CAC_LOI_TAT: LoiTat[] = [
   {
     duongDan: '/thieu-nhi',
     nhan: 'Hồ sơ thiếu nhi',
-    moTa: 'Thông tin cá nhân và bí tích',
+    moTa: 'Hồ sơ, xếp lớp, xin cho về sớm',
     icon: 'thieu-nhi',
     sprint: 4,
-    daLam: false,
+    daLam: true,
   },
   {
     duongDan: '/nam-hoc',

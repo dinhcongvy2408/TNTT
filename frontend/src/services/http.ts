@@ -50,6 +50,17 @@ export function datAccessToken(token: string | null): void {
   accessToken = token
 }
 
+/**
+ * Đọc access token hiện tại.
+ *
+ * Chỉ dùng cho WebSocket: trình duyệt không cho đặt header HTTP khi mở
+ * WebSocket, nên token phải đi trong khung STOMP CONNECT và lớp đó cần tự lấy.
+ * Mọi lời gọi HTTP thông thường đã có interceptor gắn hộ, KHÔNG gọi hàm này.
+ */
+export function layAccessToken(): string | null {
+  return accessToken
+}
+
 client.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`

@@ -565,3 +565,115 @@ chạy, để 5 request cùng chờ MỘT lần làm mới.
 - Bảng `nhat_ky_he_thong` chưa được ghi (CLAUDE.md mục 6). `nguoi_tao_id` /
   `nguoi_cap_nhat_id` mới là một nửa yêu cầu.
 - Chưa có tác vụ dọn `refresh_token` hết hạn. Bảng sẽ phình dần. Sprint 8.
+
+---
+
+## H. Đường tắt tới phiếu ra cổng (Sprint 4/5 một phần + Sprint 7)
+
+Phiếu ra cổng thuộc Sprint 7, nhưng `phieu_ra_cong.thieu_nhi_id` là
+`NOT NULL REFERENCES thieu_nhi(id)`, và payload WebSocket cần `tenLop` — tức là
+phải có `thieu_nhi` (Sprint 4) và `ghi_danh` (Sprint 5) trước. Đã làm **lát cắt
+tối thiểu** của hai sprint đó rồi làm trọn Sprint 7.
+
+### H1. Sprint 4 — phần đã làm và phần còn nợ
+
+| Đã có | Còn nợ |
+|---|---|
+| Entity `ThieuNhi`, CRUD, phân trang | Lịch sử bí tích (bảng `bi_tich`) |
+| Mã tự sinh `TN2026001` | Import Excel 1.000 dòng |
+| Xoá MỀM (`da_xoa`) theo CLAUDE.md mục 6 | Tìm không dấu bằng chỉ mục GIN |
+| `@Past` cho ngày sinh (thay CHECK mà PG từ chối, mục A1) | Ghi `nhat_ky_he_thong` |
+
+**Tìm kiếm hiện chưa bỏ dấu**: gõ `bich` không ra `Bích`. Chỉ mục GIN
+`idx_thieu_nhi_ho_ten` đã có từ V1 nhưng muốn dùng được thì truy vấn phải khớp
+CHÍNH XÁC biểu thức `f_unaccent(ho_ten)` — viết khác đi là PostgreSQL bỏ qua
+index và quét toàn bảng, tệ hơn cả không có index (mục A2). Giao diện nói thẳng
+điều này cho người dùng thay vì để họ tưởng app hỏng.
+
+**Mã tự sinh có vòng lặp thử lại.** "Đọc mã lớn nhất rồi cộng một" có khe hở
+kinh điển: hai người bấm Lưu cùng lúc thì cùng sinh một mã. Ràng buộc UNIQUE
+chặn người thứ hai — đúng như phải thế — nên service bắt lỗi đó và thử lại với
+mã kế tiếp. Dùng `saveAndFlush` chứ không `save`: `save` để Hibernate hoãn
+INSERT tới cuối transaction, lúc đó hết cơ hội bắt.
+
+### H2. Sprint 5 — chỉ ghi danh, chưa điểm danh
+
+Có `GhiDanh` để biết em thuộc lớp nào. Chưa có `DiemDanh`, chưa có `DiemSo`.
+
+`nam_hoc_id` LUÔN lấy từ lớp, không nhận từ client — khoá ngoại ghép
+`(lop_id, nam_hoc_id)` sẽ từ chối nếu hai cột lệch, nhưng lấy đúng từ đầu thì
+không bao giờ chạm tới nó.
+
+### H3. Phân quyền theo dữ liệu vẫn chưa có — Sprint 3
+
+`docs/02` phân ba mức: ADMIN xem toàn xứ, KHOI_TRUONG xem ngành mình,
+HUYNH_TRUONG xem lớp mình. Lọc theo ngành/lớp cần bảng `phan_cong`. Hiện **mọi
+tài khoản đã đăng nhập đều ĐỌC được toàn bộ danh sách thiếu nhi**. Ghi/xoá thì
+đã đúng ma trận.
+
+Đây là món nợ về **quyền riêng tư dữ liệu trẻ em**, không phải chuyện tiện ích.
+
+### H4. "KY_LUAT đang trực ca" — mới làm một nửa
+
+`docs/04` ghi quyền xác nhận phiếu là "KY_LUAT (đang trực ca)". Phần trong
+ngoặc cần đối chiếu `lich_truc` hôm nay với tổ mà người đó thuộc về. Hiện mọi
+tài khoản KY_LUAT đều xác nhận được. Dữ liệu để làm đã có
+(`lich_truc`, `thanh_vien_to_truc`), chỉ thiếu bước kiểm.
+
+### H5. Ba quyết định về WebSocket
+
+**a. Refresh token là chuỗi ngẫu nhiên, còn access token gửi trong khung STOMP
+CONNECT.** Trình duyệt không cho đặt header HTTP tuỳ ý khi mở WebSocket, nên
+không tái dùng được `JwtAuthenticationFilter` — nó là filter servlet, chỉ chạy
+cho HTTP. Sau khi bắt tay xong thì mọi khung tin đi qua kênh Spring Messaging,
+ngoài tầm với của filter chain. Xác thực nằm ở `ChannelInterceptor` trong
+`WebSocketConfig`.
+
+**b. Đẩy tin SAU KHI transaction commit.** Đây là chỗ dễ sai nhất. Gọi thẳng
+`publisher.day(...)` thì bản tin bay đi trước khi commit; nếu transaction
+rollback ở bước sau, màn hình trực cổng đã kêu chuông cho một phiếu **không tồn
+tại**. Dùng `TransactionSynchronization.afterCommit`.
+
+**c. Broker trong bộ nhớ, không dùng RabbitMQ.** Đủ ở quy mô này: một tiến
+trình backend, vài chục màn hình. Nếu Sprint 8 chạy nhiều instance thì bản tin
+đẩy ở instance A không tới màn hình nối vào instance B — lúc đó mới cần broker
+ngoài.
+
+### H6. Vite phải proxy cả `/ws`, và `ws: true` là bắt buộc
+
+Cấu hình proxy ban đầu chỉ có `/api`, nên WebSocket từ trình duyệt không tới
+được backend. Đã thêm:
+
+```js
+'/ws': { target: 'ws://localhost:8080', ws: true, changeOrigin: true }
+```
+
+Thiếu `ws: true` thì Vite xử lý `/ws` như request HTTP thường, không chuyển
+tiếp bước nâng cấp giao thức, và client nhận về HTML thay vì một kết nối.
+
+Lỗi này build xanh, lint xanh, chỉ lộ khi mở thật.
+
+### H7. Bug `lower(bytea)` — tham số null trong JPQL
+
+Truy vấn tìm thiếu nhi viết `(:tuKhoa IS NULL OR lower(t.hoTen) LIKE ...)`. Khi
+truyền null, JDBC không suy ra được kiểu nên gửi xuống PostgreSQL dạng `bytea`:
+
+```
+ERROR: function lower(bytea) does not exist
+```
+
+Build xanh, test xanh — chỉ chạy thật mới lộ. **Đã sửa** bằng cách dùng chuỗi
+rỗng làm giá trị "không lọc": chuỗi rỗng luôn có kiểu rõ ràng.
+
+### H8. Hai tài khoản dev thêm bằng SQL
+
+Chưa có API quản lý người dùng (Sprint 3), nên hai tài khoản để thử phân quyền
+được thêm thẳng bằng `psql`:
+
+| Email | Vai trò | Mật khẩu |
+|---|---|---|
+| `huynhtruong@xudoan.local` | HUYNH_TRUONG | `Huynh@123` |
+| `kyluat@xudoan.local` | KY_LUAT | `KyLuat@123` |
+
+Đây là dữ liệu DEV, không nằm trong migration nào. Sprint 3 sẽ thay bằng màn
+hình quản lý tài khoản thật.

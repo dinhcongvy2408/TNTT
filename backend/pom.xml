@@ -131,6 +131,14 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- ============ WebSocket + STOMP ============
+             Sprint 7: màn hình trực cổng phải nhận tin ngay khi giáo lý viên
+             tạo phiếu, không thể bắt người trực bấm F5 liên tục.        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <!-- ============ Test ============ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -143,7 +151,6 @@
 
              (Sprint 1 đã xong: security + jjwt ở trên)
              Sprint 3  org.apache.poi:poi-ooxml            (đọc/ghi Excel)
-             Sprint 7  spring-boot-starter-websocket
              Test      org.testcontainers:postgresql
              ================================================================== -->
     </dependencies>

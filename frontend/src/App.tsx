@@ -12,6 +12,8 @@ import { TrangChu } from '@/features/trang-chu/TrangChu'
 import { TrangKiemTra } from '@/features/health/TrangKiemTra'
 import { TrangNamHoc } from '@/features/nam-hoc/TrangNamHoc'
 import { TrangLopHoc } from '@/features/lop-hoc/TrangLopHoc'
+import { TrangThieuNhi } from '@/features/thieu-nhi/TrangThieuNhi'
+import { TrangTrucCong } from '@/features/truc-cong/TrangTrucCong'
 
 /**
  * Gốc của ứng dụng: chỉ lắp ráp provider và khai báo route.
@@ -54,16 +56,8 @@ export default function App() {
                     />
                   }
                 />
-                <Route
-                  path="/thieu-nhi"
-                  element={
-                    <TrangChuaLam
-                      tenManHinh="Hồ sơ thiếu nhi"
-                      sprint={4}
-                      moTa="Danh sách và hồ sơ từng em, kèm bí tích đã lãnh nhận và nhập từ file Excel."
-                    />
-                  }
-                />
+                <Route path="/thieu-nhi" element={<TrangThieuNhi />} />
+                <Route path="/truc-cong" element={<TrangTrucCong />} />
 
                 {/* Trang 404 thật, không còn lặng lẽ đá về trang chủ.
                     Đá về trang chủ khiến người gõ sai URL tưởng mình bấm

@@ -40,6 +40,21 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+
+      // WebSocket của màn hình trực cổng (Sprint 7).
+      //
+      // `ws: true` là BẮT BUỘC và dễ quên: thiếu nó thì Vite xử lý /ws như
+      // một request HTTP thường, không chuyển tiếp bước nâng cấp giao thức,
+      // và client nhận về một trang HTML thay vì một kết nối WebSocket.
+      //
+      // Cần proxy chứ không nối thẳng tới cổng 8080 vì hai lý do: giữ cho
+      // frontend và backend cùng origin (giống hệt production sau Nginx), và
+      // để mã nguồn không phải hardcode cổng ở bất cứ đâu.
+      '/ws': {
+        target: 'ws://localhost:8080',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 })
