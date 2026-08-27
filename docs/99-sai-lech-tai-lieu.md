@@ -324,3 +324,75 @@ báo nào cho biết ràng buộc đã bị bỏ qua.
 | Đổi nhánh `master` → `main` | `CLAUDE.md` mục 5 viết "merge vào `main`". Đổi trước khi có remote thì rẻ, sau thì phiền. |
 | Thêm Maven wrapper (`mvnw`) | Ghim phiên bản Maven trong repo: CI và máy cá nhân chạy y hệt nhau, máy mới không cần cài sẵn Maven. |
 | Thêm `.github/workflows/ci.yml` | Quy định "merge qua PR" chỉ có giá trị khi PR được kiểm tra tự động. Backend `verify`, frontend `lint` + `build` (đã gồm `tsc` strict). |
+
+---
+
+## F. Sprint 2 — Tổ chức
+
+### F1. Thiếu endpoint kích hoạt năm học — đã thêm
+
+`docs/04` mục Tổ chức chỉ liệt kê:
+
+```
+POST  /nam-hoc
+PATCH /nam-hoc/{id}/ket-thuc
+```
+
+Nhưng `V1__init_schema.sql` đặt `trang_thai` mặc định là `CHUAN_BI`, còn
+`docs/02` bước 1 đòi phải có một năm học `DANG_HOAT_DONG`. **Không đặc tả nào
+nối hai đầu lại** — theo đúng tài liệu thì năm học tạo ra rồi nằm mãi ở
+`CHUAN_BI` và hệ thống không bao giờ chạy được.
+
+Có hai cách vá:
+
+| Cách | Vấn đề |
+|---|---|
+| `POST /nam-hoc` tạo thẳng ở `DANG_HOAT_DONG` | Tạo một bản ghi và đổi năm học của cả xứ đoàn trở thành cùng một thao tác. Admin chuẩn bị trước năm sau vào tháng 3 sẽ vô tình cắt ngang năm đang chạy. |
+| Thêm `PATCH /nam-hoc/{id}/kich-hoat` | Thêm một endpoint ngoài đặc tả. |
+
+**Đã chọn cách 2.** Đổi năm học là quyết định ảnh hưởng toàn hệ thống, phải là
+một hành động có ý thức chứ không phải hệ quả phụ của việc tạo bản ghi. Máy
+trạng thái thành:
+
+```
+CHUAN_BI ──kich-hoat──▶ DANG_HOAT_DONG ──ket-thuc──▶ DA_KET_THUC
+```
+
+Một chiều, không có đường lùi: mở lại năm đã kết thúc nghĩa là cho sửa điểm và
+điểm danh của năm cũ, thứ `docs/02` bước 1 cấm.
+
+### F2. `@CreatedDate` không chạy với `OffsetDateTime` — đã sửa
+
+Bug này **có từ Sprint 0** nhưng nằm im vì lúc đó chưa entity nào được lưu
+xuống DB. Lần `save()` đầu tiên (tạo năm học) mới lộ ra:
+
+```
+InvalidDataAccessApiUsageException: Cannot convert unsupported date type
+java.time.LocalDateTime to java.time.OffsetDateTime
+```
+
+`BaseEntity` khai báo hai cột thời gian là `OffsetDateTime` (khớp `TIMESTAMPTZ`
+của PostgreSQL). Nhưng mặc định Spring Data dùng `CurrentDateTimeProvider`, thứ
+trả về `LocalDateTime`, và nó **không có** đường chuyển sang `OffsetDateTime` —
+hợp lý, vì `LocalDateTime` không biết mình thuộc múi giờ nào, đoán bừa là sai.
+
+**Đã sửa** bằng một bean `DateTimeProvider` trả thẳng `OffsetDateTime.now()`
+trong `JpaAuditingConfig`, và trỏ tới nó qua
+`@EnableJpaAuditing(dateTimeProviderRef = ...)`.
+
+> Bài học: một đoạn cấu hình chưa từng chạy thì chưa được coi là đúng. Lần rà
+> soát cuối Sprint 0 không bắt được lỗi này vì không có gì để bắt.
+
+### F3. Phân quyền tạm mở — PHẢI siết ở Sprint 1
+
+`docs/02` quy định "Tạo/sửa năm học, ngành, lớp" chỉ `ADMIN` được làm. Nhưng
+Sprint 1 chưa xong nên chưa ai đăng nhập được: ghi `hasRole('ADMIN')` ngay bây
+giờ thì mọi request đều 403 và màn hình vô dụng.
+
+Các endpoint ghi tạm để `@PreAuthorize("permitAll()")`, khai báo **tường minh**
+chứ không bỏ trống — bỏ trống thì không phân biệt được "đã cân nhắc" với
+"bị quên". Tìm lại tất cả bằng:
+
+```bash
+grep -rn "SPRINT 1: doi quyen" backend/
+```

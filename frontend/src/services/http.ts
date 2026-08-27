@@ -132,6 +132,24 @@ export const http = {
     return bocData(res.data)
   },
 
+  /**
+   * Cho endpoint mà `data` rỗng là câu trả lời HỢP LỆ, không phải lỗi.
+   *
+   * VD: GET /nam-hoc/hien-tai trả rỗng khi chưa kích hoạt năm học nào —
+   * hệ thống mới cài thì đó là trạng thái bình thường, không phải 404.
+   *
+   * Tách riêng khỏi `get` là có chủ đích: kiểu trả về `T | null` buộc nơi
+   * gọi phải xử lý trường hợp rỗng, TypeScript không cho quên.
+   */
+  async getNullable<T>(
+    url: string,
+    params?: Record<string, unknown>,
+  ): Promise<T | null> {
+    const res = await client.get<ApiResponse<T>>(url, { params })
+    kiemTraThanhCong(res.data)
+    return res.data.data ?? null
+  },
+
   async post<T>(url: string, body?: unknown): Promise<T> {
     const res = await client.post<ApiResponse<T>>(url, body)
     return bocData(res.data)

@@ -157,7 +157,12 @@ Trước khi implement một module, đọc file tương ứng trong `docs/`:
       được. Đây chính là thứ đáng lẽ bắt được lỗi hash ở V3.
       <br>5. Viết `UserDetailsService` đọc từ bảng `nguoi_dung`, rồi bỏ dòng
       `spring.autoconfigure.exclude` trong `application.yml`.
-- [ ] Sprint 2 — Tổ chức (năm học, ngành, lớp)
+- [~] Sprint 2 — Tổ chức (năm học, ngành, lớp) — ĐANG LÀM
+      <br>[x] Năm học: entity, service, API, màn hình /nam-hoc. Máy trạng thái
+      CHUAN_BI to DANG_HOAT_DONG to DA_KET_THUC, một chiều.
+      Thêm PATCH /nam-hoc/id/kich-hoat ngoài docs/04 — lý do ở docs/99 mục F1.
+      <br>[ ] Ngành: đã seed sẵn ở V2, cần API đọc.
+      <br>[ ] Lớp học: CRUD, tên lớp duy nhất trong một năm học.
 - [ ] Sprint 3 — Nhân sự & phân công
 - [ ] Sprint 4 — Hồ sơ thiếu nhi + bí tích + import Excel
 - [ ] Sprint 5 — Ghi danh & điểm danh

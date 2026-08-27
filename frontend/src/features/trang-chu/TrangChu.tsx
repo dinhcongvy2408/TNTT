@@ -39,6 +39,14 @@ const CAC_LOI_TAT: LoiTat[] = [
     daLam: false,
   },
   {
+    duongDan: '/nam-hoc',
+    nhan: 'Năm học',
+    moTa: 'Trục xoay của hệ thống, tạo và kích hoạt năm học',
+    icon: 'lop-hoc',
+    sprint: 2,
+    daLam: true,
+  },
+  {
     duongDan: '/lop-hoc',
     nhan: 'Lớp học',
     moTa: 'Năm học, ngành, danh sách lớp',

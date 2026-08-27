@@ -5,6 +5,7 @@ import { BoCucChinh } from '@/components/layout/BoCucChinh'
 import { TrangChuaLam } from '@/components/TrangChuaLam'
 import { TrangChu } from '@/features/trang-chu/TrangChu'
 import { TrangKiemTra } from '@/features/health/TrangKiemTra'
+import { TrangNamHoc } from '@/features/nam-hoc/TrangNamHoc'
 
 /**
  * Gốc của ứng dụng: chỉ lắp ráp provider và khai báo route.
@@ -57,6 +58,8 @@ export default function App() {
                 />
               }
             />
+
+            <Route path="/nam-hoc" element={<TrangNamHoc />} />
 
             <Route path="/kiem-tra" element={<TrangKiemTra />} />
 
