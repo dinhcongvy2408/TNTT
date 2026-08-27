@@ -130,7 +130,23 @@ Trước khi implement một module, đọc file tương ứng trong `docs/`:
       **5433**), Flyway V1–V3, `ApiResponse` + `GlobalExceptionHandler`, Swagger,
       React + Vite + Tailwind v4 + TanStack Query, `GET /api/v1/health` chạy thông
       cả chuỗi React → Vite proxy → Spring → PostgreSQL.
+- [x] **Rà soát cuối Sprint 0** (27/08/2026): sửa hash mật khẩu admin (V3 sai,
+      tài khoản không đăng nhập được — đã sửa ở **Flyway V4**), bỏ `Content-Type`
+      cứng ở axios, `bocData` không còn ép kiểu `as T`, thêm `@Valid` cho
+      `AppProperties.Jwt`, xoá thư mục trùng `tntt-docs/`, đổi nhánh `master` →
+      `main`, thêm Maven wrapper và CI GitHub Actions.
+      Chi tiết và lý do: `docs/99-sai-lech-tai-lieu.md` mục E.
 - [ ] Sprint 1 — Auth & phân quyền
+      <br>**Việc bắt buộc, đã ghi sẵn lý do trong code:**
+      <br>1. Bỏ comment handler `AccessDeniedException` ở `GlobalExceptionHandler`
+      mục 4b — không làm thì "thiếu quyền" trả 500 chứ không phải 403.
+      <br>2. Thêm `@NotBlank` + độ dài tối thiểu 64 cho `app.jwt.secret`
+      (`AppProperties.Jwt`) — mặc định đang là chuỗi rỗng.
+      <br>3. `JpaAuditingConfig.auditorProvider()` đang luôn trả rỗng — đổi để
+      đọc user id từ `SecurityContextHolder`.
+      <br>4. Viết test tự động kiểm chứng mật khẩu tài khoản admin đăng nhập
+      được. Đây chính là thứ đáng lẽ bắt được lỗi hash ở V3.
+      <br>5. `/actuator/health` phải `permitAll`, các endpoint khác chặn hết.
 - [ ] Sprint 2 — Tổ chức (năm học, ngành, lớp)
 - [ ] Sprint 3 — Nhân sự & phân công
 - [ ] Sprint 4 — Hồ sơ thiếu nhi + bí tích + import Excel

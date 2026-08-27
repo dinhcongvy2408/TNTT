@@ -1,0 +1,85 @@
+# =====================================================================
+# CI — chạy mỗi khi push lên main hoặc mở PR vào main.
+#
+# CLAUDE.md mục 5 quy định "mỗi feature một nhánh, merge vào main qua PR".
+# Quy định đó chỉ có giá trị nếu PR được KIỂM TRA tự động — không thì nó
+# chỉ là một nút bấm. Đây là phần kiểm tra đó.
+#
+# Hai job chạy SONG SONG vì backend và frontend không phụ thuộc nhau:
+# hỏng bên nào biết ngay bên đó, không phải chờ bên kia build xong.
+# =====================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Push liên tiếp lên cùng một nhánh thì huỷ lần chạy cũ — đỡ tốn phút
+# chạy miễn phí của GitHub và không phải chờ kết quả đã lỗi thời.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — build & test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cài JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          # Lưu ~/.m2 giữa các lần chạy. Không có nó thì mỗi lần CI đều
+          # tải lại toàn bộ dependency, mất vài phút cho mỗi PR.
+          cache: maven
+
+      - name: Build và chạy test
+        # Dùng ./mvnw chứ không phải mvn: wrapper ghim đúng phiên bản Maven
+        # trong repo, nên CI và máy cá nhân chạy y hệt nhau. Máy chạy CI
+        # cũng không cần cài sẵn Maven.
+        run: ./mvnw -B --no-transfer-progress verify
+
+      # Test hiện dùng standalone MockMvc nên chưa cần PostgreSQL.
+      # Khi Sprint 1 có test tích hợp thật, thêm Testcontainers — nó tự
+      # bật container Postgres, không cần khai báo `services:` ở đây.
+
+  frontend:
+    name: Frontend — lint & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cài Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # `npm ci` chứ không phải `npm install`: nó cài đúng theo
+      # package-lock.json và báo lỗi nếu lock lệch với package.json.
+      # `install` thì tự ý sửa lock — CI không được phép làm vậy.
+      - name: Cài dependency
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `npm run build` = `tsc -b && vite build`, nên bước này kiểm luôn
+      # cả kiểu TypeScript ở chế độ strict, không chỉ đóng gói.
+      - name: Build
+        run: npm run build

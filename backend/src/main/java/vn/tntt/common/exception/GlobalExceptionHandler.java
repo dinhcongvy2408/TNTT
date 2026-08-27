@@ -151,6 +151,36 @@ public class GlobalExceptionHandler {
     }
 
     // ---------------------------------------------------------------
+    // 4b. [SPRINT 1 — BẮT BUỘC LÀM] Lỗi phân quyền của Spring Security
+    // ---------------------------------------------------------------
+    //
+    // CÁI BẪY: @PreAuthorize kiểm quyền ở lúc GỌI METHOD, tức là BÊN TRONG
+    // DispatcherServlet. Nên AuthorizationDeniedException nó ném ra KHÔNG bị
+    // ExceptionTranslationFilter của Spring Security bắt (filter đó nằm ngoài,
+    // và đã chạy xong từ trước) — nó rơi thẳng vào @RestControllerAdvice này
+    // và bị lưới Exception.class ở mục 5 vợt mất.
+    //
+    // Hậu quả: "bạn không có quyền" biến thành 500 "Hệ thống gặp sự cố".
+    // Frontend không phân biệt được thiếu quyền với server sập, còn ta thì
+    // thấy log ERROR kèm stacktrace cho một tình huống hoàn toàn bình thường.
+    //
+    // Khi thêm spring-boot-starter-security ở Sprint 1, bỏ comment khối này:
+    //
+    // @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    // public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
+    //         org.springframework.security.access.AccessDeniedException ex) {
+    //     log.warn("Từ chối truy cập: {}", ex.getMessage());
+    //     return ResponseEntity.status(HttpStatus.FORBIDDEN)
+    //             .body(ApiResponse.error("Bạn không có quyền thực hiện thao tác này",
+    //                                     "ACCESS_DENIED"));
+    // }
+    //
+    // Lưu ý: AuthorizationDeniedException (Spring Security 6.x) là lớp CON của
+    // AccessDeniedException, nên một handler là đủ cho cả hai.
+    // Còn AuthenticationException (chưa đăng nhập / token hỏng) thì KHÔNG tới
+    // được đây — nó bị chặn ở tầng filter, xử lý bằng AuthenticationEntryPoint.
+
+    // ---------------------------------------------------------------
     // 5. Lưới an toàn cuối cùng
     // ---------------------------------------------------------------
 

@@ -206,3 +206,91 @@ phần auth.
 `docs/02` bước 1. Cũng phải ép ở tầng service, hoặc bằng trigger nếu muốn chắc
 chắn hơn. Chưa có gì trong schema hiện tại chặn việc sửa dữ liệu của năm học
 đã kết thúc.
+
+---
+
+## E. Sửa sau khi rà soát cuối Sprint 0
+
+Ghi ngày 27/08/2026, sau một lượt kiểm tra toàn bộ code base.
+
+### E1. Hash mật khẩu admin trong `schema.sql` gốc là SAI — đã sửa ở V4
+
+`schema.sql` (và `V3__tai_khoan_admin.sql` chép theo) ghi:
+
+```sql
+-- Mật khẩu mặc định: Admin@123
+'$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+```
+
+Chú thích đó sai. Đem hash đi đối chiếu thì nó **không khớp `Admin@123`**, mà
+cũng không khớp bất kỳ mật khẩu phổ biến nào — tức là tài khoản quản trị duy
+nhất của hệ thống không đăng nhập được bằng cách nào cả.
+
+Cách kiểm chứng (không cần cài gì, `pgcrypto` đã bật từ V1):
+
+```sql
+SELECT crypt('Admin@123', mat_khau_hash) = mat_khau_hash
+FROM nguoi_dung WHERE email = 'admin@xudoan.local';
+```
+
+`crypt(mat_khau, hash_day_du)` tự rút phần salt nằm sẵn trong hash để băm lại,
+nên so sánh được — đây cũng chính là cách `BCryptPasswordEncoder.matches()`
+hoạt động.
+
+**Đã sửa** bằng `V4__sua_mat_khau_admin.sql`, hash mới sinh bằng
+`crypt('Admin@123', gen_salt('bf', 10))` và đã đối chiếu lại: khớp `Admin@123`,
+từ chối mật khẩu sai. Không sửa V3 vì Flyway ghi checksum của file đã chạy.
+
+> **Bài học chung:** một credential chép từ tài liệu mà chưa ai đăng nhập thử
+> thì chưa được coi là đúng. Sprint 1 nên có một test tự động cho việc này.
+
+### E2. `@PreAuthorize` bị từ chối sẽ trả 500 thay vì 403 — Sprint 1
+
+`@PreAuthorize` kiểm quyền lúc **gọi method**, tức bên trong DispatcherServlet.
+`ExceptionTranslationFilter` của Spring Security nằm ở tầng filter, đã chạy
+xong từ trước, nên không bắt được. Exception rơi thẳng vào
+`GlobalExceptionHandler` và bị lưới `Exception.class` vợt mất → 500.
+
+Đã ghi khối code sẵn sàng dùng ngay trong `GlobalExceptionHandler` (mục 4b),
+bỏ comment khi thêm `spring-boot-starter-security`.
+
+Phân biệt: `AuthenticationException` (chưa đăng nhập, token hỏng) thì **không**
+tới được `@RestControllerAdvice` — nó bị chặn ở tầng filter và xử lý bằng
+`AuthenticationEntryPoint`.
+
+### E3. `Content-Type` cứng ở axios sẽ làm hỏng import Excel — đã sửa
+
+`services/http.ts` khai báo `headers: { 'Content-Type': 'application/json' }` ở
+cấp instance, nên nó áp cho **mọi** request. Khi Sprint 4 gửi `FormData`, axios
+lẽ ra tự đặt `multipart/form-data; boundary=...`; header cứng đè lên, server
+mất `boundary` và không tách được file.
+
+**Đã bỏ** dòng đó. Body là object thường thì axios tự đặt `application/json`.
+
+### E4. `bocData` nói dối kiểu trả về — đã sửa
+
+Hàm hứa trả `T` nhưng thân hàm là `return body.data as T`, trả `null` khi
+backend gửi `data` rỗng. `as` vô hiệu hoá đúng thứ mà `strict` mode sinh ra để
+chặn, và lỗi chỉ nổ vài lớp sau ở một dòng chẳng liên quan.
+
+**Đã sửa:** `bocData` ném `ApiError` khi `data` rỗng. Endpoint không có dữ liệu
+trả về (xoá, đổi trạng thái) dùng `httpVoid` — một export riêng, nhìn lời gọi
+là biết ngay endpoint thuộc loại nào.
+
+### E5. `@Min` trong `AppProperties.Jwt` không bao giờ chạy — đã sửa
+
+Bean Validation **không** tự đệ quy vào object lồng nhau. Thiếu `@Valid` trên
+component `jwt` thì mọi `@Min` bên trong chỉ là trang trí — và không có cảnh
+báo nào cho biết ràng buộc đã bị bỏ qua.
+
+**Đã thêm** `@Valid`. Sprint 1 thêm tiếp `@NotBlank` + độ dài tối thiểu cho
+`secret`: application.yml đang để mặc định là chuỗi rỗng.
+
+### E6. Dọn repo
+
+| Việc | Vì sao |
+|---|---|
+| Xoá `tntt-docs/` | Trùng nội dung với `docs/` + `schema.sql` + `CLAUDE.md`, và `tntt-docs/CLAUDE.md` **đã lệch** với bản gốc. Hai nguồn sự thật cho cùng một tài liệu chắc chắn dẫn tới đọc nhầm bản cũ. |
+| Đổi nhánh `master` → `main` | `CLAUDE.md` mục 5 viết "merge vào `main`". Đổi trước khi có remote thì rẻ, sau thì phiền. |
+| Thêm Maven wrapper (`mvnw`) | Ghim phiên bản Maven trong repo: CI và máy cá nhân chạy y hệt nhau, máy mới không cần cài sẵn Maven. |
+| Thêm `.github/workflows/ci.yml` | Quy định "merge qua PR" chỉ có giá trị khi PR được kiểm tra tự động. Backend `verify`, frontend `lint` + `build` (đã gồm `tsc` strict). |

@@ -1,5 +1,6 @@
 package vn.tntt.common.config;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -27,11 +28,23 @@ public record AppProperties(
         @NotEmpty(message = "Phải khai báo ít nhất một origin cho CORS")
         List<String> corsAllowedOrigins,
 
+        // @Valid là BẮT BUỘC ở đây. Bean Validation KHÔNG tự đi vào object
+        // lồng nhau — thiếu nó thì mọi @Min bên trong record Jwt chỉ là
+        // trang trí, không bao giờ chạy. Đây là lỗi im lặng: không có thông
+        // báo nào cho biết ràng buộc đã bị bỏ qua.
+        @Valid
         Jwt jwt
 ) {
 
     public record Jwt(
-            /** Khoá ký token. Đọc từ biến môi trường, KHÔNG hardcode. */
+            /**
+             * Khoá ký token. Đọc từ biến môi trường, KHÔNG hardcode.
+             *
+             * <p>Sprint 1 phải thêm {@code @NotBlank} và ràng buộc độ dài
+             * tối thiểu 64 ký tự. Hiện application.yml để mặc định là chuỗi
+             * rỗng — ký JWT bằng khoá rỗng sẽ nổ lúc CHẠY, đúng thứ mà cả
+             * lớp này sinh ra để tránh.
+             */
             String secret,
 
             @Min(1) int accessTtlMinutes,

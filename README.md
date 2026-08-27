@@ -1,4 +1,4 @@
-# Hệ thống Quản lý Xứ đoàn Thiếu Nhi Thánh Thể
+| Maven | không cần cài — dùng `./mvnw` trong repo | `./mvnw -v` |# Hệ thống Quản lý Xứ đoàn Thiếu Nhi Thánh Thể
 
 Web application quản lý và vận hành Xứ đoàn Thiếu Nhi Thánh Thể của giáo xứ:
 hồ sơ thiếu nhi, bí tích, điểm danh hằng tuần, điểm số, chuyển cấp, và phiếu
@@ -44,7 +44,7 @@ là over-engineering. Mỗi module là một package trong cùng một ứng d�
 | Công cụ | Bản tối thiểu | Kiểm tra |
 |---|---|---|
 | JDK | 21 | `java -version` |
-| Maven | 3.9 | `mvn -v` |
+| Maven | không cần cài riêng — repo có `./mvnw` | `./mvnw -v` |
 | Node.js | 20 | `node -v` |
 | Docker Desktop | 24 | `docker -v` |
 
@@ -62,7 +62,7 @@ docker compose ps             # đợi tới khi cột STATUS ghi (healthy)
 
 # 3. Bật backend  (cửa sổ terminal riêng)
 cd backend
-mvn spring-boot:run
+./mvnw spring-boot:run           # Windows: mvnw.cmd spring-boot:run
 
 # 4. Bật frontend (cửa sổ terminal riêng)
 cd frontend
@@ -88,7 +88,7 @@ Mở trình duyệt:
 
 `docker compose` **có** đọc `.env`. Spring Boot thì **không**.
 
-Khi bạn chạy `mvn spring-boot:run`, backend lấy giá trị từ phần
+Khi bạn chạy `./mvnw spring-boot:run`, backend lấy giá trị từ phần
 `${BIEN:giá_trị_mặc_định}` trong `application.yml`. Các giá trị mặc định ở đó
 đã để khớp sẵn với `.env.example`, nên chạy local là thông.
 
@@ -96,7 +96,7 @@ Nếu bạn đổi mật khẩu trong `.env`, phải đổi **cả hai chỗ**, 
 môi trường vào cho Maven:
 
 ```bash
-POSTGRES_PASSWORD=mat_khau_moi mvn spring-boot:run
+POSTGRES_PASSWORD=mat_khau_moi ./mvnw spring-boot:run
 ```
 
 Trên production thì không có vấn đề này — biến môi trường do Docker Compose
@@ -224,9 +224,11 @@ Chi tiết từng sprint: [docs/05-lo-trinh.md](docs/05-lo-trinh.md)
 ```bash
 # Backend
 cd backend
-mvn spring-boot:run                    # chạy dev
-mvn test                               # chạy test
-mvn clean package                      # đóng gói .jar
+./mvnw spring-boot:run                 # chạy dev
+./mvnw test                            # chạy test
+./mvnw clean package                   # đóng gói .jar
+#   Dùng ./mvnw (mvnw.cmd trên Windows) chứ không phải mvn: wrapper ghim
+#   đúng phiên bản Maven trong repo, nên máy bạn và CI chạy y hệt nhau.
 
 # Frontend
 cd frontend

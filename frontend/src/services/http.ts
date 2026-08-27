@@ -24,7 +24,12 @@ const client: AxiosInstance = axios.create({
   // Mạng ở nhà thờ chậm, nhưng chờ quá 20 giây thì huynh trưởng đã bấm lại rồi.
   timeout: 20_000,
 
-  headers: { 'Content-Type': 'application/json' },
+  // KHÔNG đặt Content-Type ở đây. Header khai báo tại instance áp cho MỌI
+  // request, kể cả khi body là FormData — lúc đó axios lẽ ra phải tự đặt
+  // 'multipart/form-data; boundary=...', mà boundary là thứ server dùng để
+  // tách các phần của file. Đè lên nó thì Sprint 4 import Excel sẽ hỏng với
+  // một lỗi rất khó truy. Body là object thường thì axios đã tự đặt
+  // application/json rồi, ta không cần làm gì.
 })
 
 // ---------------------------------------------------------------------
@@ -86,19 +91,41 @@ client.interceptors.response.use(
 // ---------------------------------------------------------------------
 
 /**
- * Lấy `data` ra khỏi vỏ ApiResponse.
+ * Kiểm tra cờ `success` trong vỏ ApiResponse.
  *
- * Backend có thể trả success = true kèm data = null (VD: sau khi xoá).
- * Ở đây ta coi đó là lỗi, vì các hàm bên dưới hứa trả về T. Endpoint nào
- * không có dữ liệu trả về thì dùng `del`/`post` với T = void.
+ * Cần thiết vì HTTP 200 chưa chắc là thành công về mặt nghiệp vụ: theo
+ * docs/04-api.md, backend có thể trả 200 kèm `success: false`.
  */
-function bocData<T>(body: ApiResponse<T>): T {
+function kiemTraThanhCong(body: ApiResponse<unknown>): void {
   if (!body.success) {
     throw new ApiError(body.message ?? 'Yêu cầu thất bại', 400, body.errorCode)
   }
-  return body.data as T
 }
 
+/**
+ * Bóc `data` cho endpoint CÓ trả dữ liệu.
+ *
+ * `data` rỗng ở đây là vi phạm hợp đồng API, nên ta ném lỗi thay vì trả
+ * null. Lý do: hàm này hứa trả về `T`. Nếu nó lặng lẽ trả null rồi ép kiểu
+ * `as T`, TypeScript sẽ tin là có dữ liệu và lỗi chỉ nổ sau đó vài lớp, ở
+ * một dòng `health.database` chẳng liên quan gì — đúng loại lỗi mà strict
+ * mode sinh ra để chặn, và một dấu `as` là đủ vô hiệu hoá nó.
+ *
+ * Endpoint không có dữ liệu trả về thì dùng `httpVoid` bên dưới.
+ */
+function bocData<T>(body: ApiResponse<T>): T {
+  kiemTraThanhCong(body)
+  if (body.data === null || body.data === undefined) {
+    throw new ApiError(
+      'Máy chủ không trả về dữ liệu cho một yêu cầu đáng lẽ phải có',
+      500,
+      'EMPTY_DATA',
+    )
+  }
+  return body.data
+}
+
+/** Gọi API và mong đợi có dữ liệu trả về. */
 export const http = {
   async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
     const res = await client.get<ApiResponse<T>>(url, { params })
@@ -123,5 +150,35 @@ export const http = {
   async del<T>(url: string): Promise<T> {
     const res = await client.delete<ApiResponse<T>>(url)
     return bocData(res.data)
+  },
+}
+
+/**
+ * Gọi API KHÔNG mong đợi dữ liệu trả về: xoá, đổi trạng thái, xác nhận
+ * phiếu ra cổng... Backend trả `ApiResponse.ok(message)` với `data` rỗng.
+ *
+ * Tách riêng khỏi `http` là có chủ đích: nhìn vào lời gọi là biết ngay
+ * endpoint đó có dữ liệu hay không, và `http` giữ được lời hứa "trả về T"
+ * mà không phải nói dối kiểu.
+ */
+export const httpVoid = {
+  async post(url: string, body?: unknown): Promise<void> {
+    const res = await client.post<ApiResponse<unknown>>(url, body)
+    kiemTraThanhCong(res.data)
+  },
+
+  async put(url: string, body?: unknown): Promise<void> {
+    const res = await client.put<ApiResponse<unknown>>(url, body)
+    kiemTraThanhCong(res.data)
+  },
+
+  async patch(url: string, body?: unknown): Promise<void> {
+    const res = await client.patch<ApiResponse<unknown>>(url, body)
+    kiemTraThanhCong(res.data)
+  },
+
+  async del(url: string): Promise<void> {
+    const res = await client.delete<ApiResponse<unknown>>(url)
+    kiemTraThanhCong(res.data)
   },
 }
