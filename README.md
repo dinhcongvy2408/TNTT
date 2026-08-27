@@ -7,8 +7,10 @@ ra cổng real-time cho Ban Kỷ luật.
 Dự án phi lợi nhuận, chạy production thật. Quy mô giai đoạn 1: ~1.000 thiếu nhi,
 ~150 huynh trưởng.
 
-> **Trạng thái: Sprint 0 hoàn tất.** Backend + database + frontend đã chạy thông
-> nhau qua `GET /api/v1/health`. Xem [Lộ trình](#8-lộ-trình).
+> **Trạng thái:** Sprint 0, 1, 2, 7 hoàn tất. Sprint 4 và 5 làm một phần (hồ sơ
+> thiếu nhi và ghi danh — đủ để phiếu ra cổng chạy được). Đăng nhập JWT, quản lý
+> năm học và lớp, hồ sơ thiếu nhi, và **phiếu ra cổng real-time qua WebSocket**
+> đều đã dùng được. Xem [Lộ trình](#8-lộ-trình) và `CLAUDE.md` mục 8.
 
 ---
 
@@ -87,6 +89,34 @@ lách được (`docs/99` mục G3).
 
 > Hash mật khẩu này nằm công khai trong repo (migration V4), coi như đã lộ.
 > Trước khi deploy production phải viết một migration mới đặt hash thật.
+
+### Tài khoản thử phân quyền (chỉ môi trường dev)
+
+Chạy một lần để tạo:
+
+```bash
+docker exec -i tntt-postgres psql -U tntt -d tntt < backend/src/main/resources/db/seed-dev.sql
+```
+
+| Email | Mật khẩu | Vai trò |
+|---|---|---|
+| `admin@xudoan.local` | `Admin@123` | ADMIN |
+| `khoitruong@xudoan.local` | `Khoi@123` | KHOI_TRUONG |
+| `huynhtruong@xudoan.local` | `Huynh@123` | HUYNH_TRUONG |
+| `kyluat@xudoan.local` | `KyLuat@123` | KY_LUAT |
+| `daivai@xudoan.local` | `DaiVai@123` | HUYNH_TRUONG + KY_LUAT |
+
+Bốn tài khoản dưới có `can_doi_mat_khau = false` nên đăng nhập là dùng được
+ngay, không bị chặn ở màn hình đổi mật khẩu.
+
+`seed-dev.sql` nằm ở `db/` chứ **không** ở `db/migration/` — cố ý. Flyway chạy
+mọi file trong `db/migration/` ở mọi môi trường, kể cả production; đưa các tài
+khoản có mật khẩu công khai vào đó là tự tạo cửa hậu trên máy chủ thật.
+
+**Thử real-time:** mở hai cửa sổ trình duyệt (một cái ẩn danh), đăng nhập
+`huynhtruong` ở cửa sổ này và `kyluat` ở cửa sổ kia. Vào **Thiếu nhi** → bấm
+vào một em → *Xin cho về sớm*. Cửa sổ `kyluat` ở trang **Trực cổng** sẽ kêu
+chuông và hiện tên em ngay.
 
 ---
 
