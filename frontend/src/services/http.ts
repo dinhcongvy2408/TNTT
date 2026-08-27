@@ -61,9 +61,60 @@ client.interceptors.request.use((config) => {
 // Interceptor response — chuẩn hoá lỗi
 // ---------------------------------------------------------------------
 
+// ---------------------------------------------------------------------
+// Tự làm mới access token khi gặp 401
+// ---------------------------------------------------------------------
+
+/**
+ * Access token chỉ sống 30 phút. Không có cơ chế này thì cứ nửa tiếng một
+ * lần, huynh trưởng đang điểm danh dở lại bị đá về màn hình đăng nhập.
+ *
+ * Cách chạy: gặp 401 → gọi /auth/refresh (cookie tự đính kèm) → lấy token
+ * mới → gửi lại đúng request vừa hỏng. Người dùng không thấy gì cả.
+ */
+
+/** Nơi ứng dụng đăng ký hành động "phiên đã chết thật, cho về đăng nhập". */
+let khiPhienHetHan: (() => void) | null = null
+
+export function datXuLyPhienHetHan(xuLy: (() => void) | null): void {
+  khiPhienHetHan = xuLy
+}
+
+/**
+ * Lời hứa của lần làm mới ĐANG chạy, hoặc null.
+ *
+ * Vì sao cần biến này? Màn hình điểm danh có thể bắn 5 request cùng lúc.
+ * Nếu token vừa hết hạn thì cả 5 cùng nhận 401 và cùng gọi /auth/refresh.
+ * Backend có XOAY VÒNG token: lần refresh đầu tiên thu hồi token cũ, nên 4
+ * lần còn lại thất bại và người dùng bị đăng xuất oan.
+ *
+ * Giữ chung một lời hứa thì 5 request cùng chờ MỘT lần làm mới.
+ */
+let dangLamMoi: Promise<string> | null = null
+
+async function lamMoiToken(): Promise<string> {
+  dangLamMoi ??= client
+    .post<ApiResponse<{ accessToken: string }>>('/api/v1/auth/refresh')
+    .then((res) => {
+      const token = res.data.data?.accessToken
+      if (!res.data.success || !token) {
+        throw new ApiError('Không làm mới được phiên', 401)
+      }
+      accessToken = token
+      return token
+    })
+    .finally(() => {
+      dangLamMoi = null
+    })
+  return dangLamMoi
+}
+
+/** Các endpoint KHÔNG được thử làm mới, tránh vòng lặp vô tận. */
+const KHONG_TU_LAM_MOI = ['/api/v1/auth/refresh', '/api/v1/auth/login']
+
 client.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<ApiResponse<unknown>>) => {
+  async (error: AxiosError<ApiResponse<unknown>>) => {
     // Không có response = không tới được server (mất mạng / server chưa bật)
     if (!error.response) {
       return Promise.reject(
@@ -75,6 +126,27 @@ client.interceptors.response.use(
     }
 
     const { status, data } = error.response
+    const config = error.config as (typeof error.config & { daThuLai?: boolean }) | undefined
+
+    // `daThuLai` chặn vòng lặp: nếu request đã gửi lại một lần mà vẫn 401 thì
+    // vấn đề không nằm ở token hết hạn nữa.
+    if (
+      status === 401 &&
+      config &&
+      !config.daThuLai &&
+      !KHONG_TU_LAM_MOI.some((duong) => config.url?.includes(duong))
+    ) {
+      config.daThuLai = true
+      try {
+        await lamMoiToken()
+        return await client.request(config)
+      } catch {
+        // Refresh token cũng chết: phiên hết hạn thật.
+        accessToken = null
+        khiPhienHetHan?.()
+      }
+    }
+
     return Promise.reject(
       new ApiError(
         data?.message ?? 'Đã có lỗi xảy ra',

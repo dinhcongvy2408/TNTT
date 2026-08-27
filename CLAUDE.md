@@ -143,20 +143,21 @@ Trước khi implement một module, đọc file tương ứng trong `docs/`:
       qua `<Outlet/>`, Trang chủ có dải trạng thái hệ thống, và `TrangChuaLam`
       cho màn hình chưa xây. Chưa có màn hình nghiệp vụ nào — đó là việc của
       từng sprint.
-- [ ] Sprint 1 — Auth & phân quyền
-      <br>**Việc bắt buộc, đã ghi sẵn lý do trong code:**
-      <br>1. `SecurityConfig` đang `permitAll` TOÀN BỘ — thay
-      `.anyRequest().permitAll()` bằng danh sách cụ thể, và chèn
-      `JwtAuthenticationFilter`. Giữ `OPTIONS /**` permitAll (preflight không
-      kèm header Authorization) và `/actuator/health` permitAll.
-      <br>2. Thêm `@NotBlank` + độ dài tối thiểu 64 cho `app.jwt.secret`
-      (`AppProperties.Jwt`) — mặc định đang là chuỗi rỗng.
-      <br>3. `JpaAuditingConfig.auditorProvider()` đang luôn trả rỗng — đổi để
-      đọc user id từ `SecurityContextHolder`.
-      <br>4. Viết test tự động kiểm chứng mật khẩu tài khoản admin đăng nhập
-      được. Đây chính là thứ đáng lẽ bắt được lỗi hash ở V3.
-      <br>5. Viết `UserDetailsService` đọc từ bảng `nguoi_dung`, rồi bỏ dòng
-      `spring.autoconfigure.exclude` trong `application.yml`.
+- [x] **Sprint 1 — HOÀN TẤT** (27/08/2026): xác thực và phân quyền.
+      <br>JWT access token 30 phút (không lưu server) + refresh token 7 ngày
+      dạng chuỗi ngẫu nhiên, lưu BẢN BĂM ở bảng `refresh_token` (Flyway V5) nên
+      thu hồi được. Refresh token XOAY VÒNG mỗi lần dùng.
+      <br>Cookie HttpOnly + SameSite=Lax cho refresh token; access token nằm
+      trong biến JavaScript, không vào localStorage.
+      <br>Bắt đổi mật khẩu lần đầu ép ở BACKEND (filter chặn mọi endpoint trừ
+      /auth/me, /auth/doi-mat-khau, /auth/logout, /health) — không chỉ chuyển
+      hướng ở frontend.
+      <br>Đăng nhập sai và tài khoản không tồn tại trả CÙNG một câu, có test
+      khoá chặt, để không dò được email nào có thật.
+      <br>Frontend: màn hình đăng nhập, đổi mật khẩu, tự làm mới token khi 401,
+      khôi phục phiên sau F5, menu người dùng + đăng xuất.
+      <br>KHÔNG dùng UserDetailsService — lý do ở docs/99 mục G4.
+      <br>Chi tiết: docs/99 mục G.
 - [x] **Sprint 2 — HOÀN TẤT** (27/08/2026): năm học, ngành, lớp học.
       <br>Năm học: máy trạng thái một chiều CHUAN_BI to DANG_HOAT_DONG to
       DA_KET_THUC, màn hình /nam-hoc. Thêm PATCH /nam-hoc/id/kich-hoat ngoài
@@ -170,10 +171,17 @@ Trước khi implement một module, đọc file tương ứng trong `docs/`:
       <br>**Nợ sang Sprint 3:** GET /lop/cua-toi và lọc lớp theo quyền của
       người đăng nhập — docs/99 mục F4.
 - [ ] Sprint 3 — Nhân sự & phân công
-      <br>**Nợ từ Sprint 2:** thêm `GET /lop/cua-toi` và lọc `GET /lop` theo
-      lớp được phân công. docs/02 quy định huynh trưởng chỉ xem được lớp mình.
+      <br>**Nợ dồn từ Sprint 1 và 2** (docs/99 mục G8):
+      <br>1. `GET /lop/cua-toi` và lọc `GET /lop` theo phân công. Hiện MỌI tài
+      khoản đã đăng nhập đều đọc được toàn bộ danh sách lớp, trong khi docs/02
+      quy định huynh trưởng chỉ xem được lớp mình.
+      <br>2. Ghi bảng `nhat_ky_he_thong` (CLAUDE.md mục 6). Cột `nguoi_tao_id`
+      mới là một nửa yêu cầu audit.
 - [ ] Sprint 4 — Hồ sơ thiếu nhi + bí tích + import Excel
 - [ ] Sprint 5 — Ghi danh & điểm danh
 - [ ] Sprint 6 — Điểm số & chuyển cấp
 - [ ] Sprint 7 — Ban kỷ luật & phiếu ra cổng (WebSocket)
 - [ ] Sprint 8 — Deploy production
+      <br>**Nợ:** bật `secure(true)` cho cookie refresh token và cân nhắc
+      `SameSite=None` nếu frontend/backend khác site (docs/99 mục D1); tác vụ
+      dọn `refresh_token` hết hạn (mục G8).

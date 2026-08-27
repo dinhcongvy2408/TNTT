@@ -13,11 +13,17 @@ spring:
     name: tntt-backend
 
   # ---------------- Tắt tài khoản in-memory của Spring Boot ----------------
-  # Có spring-boot-starter-security trong classpath mà chưa có UserDetailsService,
-  # Spring Boot tự tạo một user tên "user" kèm mật khẩu ngẫu nhiên và IN RA LOG
-  # mỗi lần khởi động. Ta đã có tài khoản thật trong bảng nguoi_dung, nên cái
-  # tài khoản giả đó chỉ gây nhầm: người đọc log sẽ tưởng đó là mật khẩu admin.
-  # Sprint 1 viết UserDetailsService đọc từ DB thì bỏ dòng exclude này đi.
+  # GIỮ LẠI SAU SPRINT 1, có chủ đích.
+  #
+  # Không có UserDetailsService trong classpath thì Spring Boot tự tạo một user
+  # tên "user" kèm mật khẩu ngẫu nhiên và IN RA LOG mỗi lần khởi động — dễ bị
+  # nhầm là mật khẩu admin thật.
+  #
+  # Và ta KHÔNG cần UserDetailsService: hệ thống này xác thực bằng JWT, việc
+  # kiểm mật khẩu do AuthService làm trực tiếp với PasswordEncoder, còn danh
+  # tính từng request do JwtAuthenticationFilter dựng từ token. UserDetailsService
+  # + AuthenticationManager là bộ đôi phục vụ form login theo session — thêm vào
+  # đây chỉ là một tầng gián tiếp không ai gọi tới.
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration

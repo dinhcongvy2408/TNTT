@@ -79,8 +79,14 @@ Mở trình duyệt:
 | <http://localhost:8080/swagger-ui.html> | Tài liệu API (chỉ có ở profile `dev`) |
 | <http://localhost:5050> | pgAdmin, chạy `docker compose up -d pgadmin` trước |
 
-**Tài khoản mặc định** (Sprint 1 mới dùng được):
-`admin@xudoan.local` / `Admin@123` — bắt buộc đổi ở lần đăng nhập đầu.
+**Tài khoản mặc định**: `admin@xudoan.local` / `Admin@123`
+
+Hệ thống bắt đổi mật khẩu ngay lần đăng nhập đầu, và việc bắt buộc đó ép ở
+**backend** chứ không chỉ chuyển hướng ở giao diện — gọi thẳng API cũng không
+lách được (`docs/99` mục G3).
+
+> Hash mật khẩu này nằm công khai trong repo (migration V4), coi như đã lộ.
+> Trước khi deploy production phải viết một migration mới đặt hash thật.
 
 ---
 

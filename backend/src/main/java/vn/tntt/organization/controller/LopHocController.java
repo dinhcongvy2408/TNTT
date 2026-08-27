@@ -50,7 +50,7 @@ public class LopHocController {
      * {@code MissingServletRequestParameterException}.
      */
     @GetMapping
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Danh sách lớp của một năm học")
     public ApiResponse<List<LopHocResponse>> danhSach(
             @RequestParam UUID namHocId,
@@ -60,16 +60,14 @@ public class LopHocController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    // SPRINT 1: doi quyen -> @PreAuthorize("hasRole('ADMIN')")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo lớp học mới")
     public ApiResponse<LopHocResponse> tao(@Valid @RequestBody LuuLopHocRequest request) {
         return ApiResponse.ok(lopHocService.taoMoi(request), "Đã tạo lớp học");
     }
 
     @PutMapping("/{id}")
-    // SPRINT 1: doi quyen -> @PreAuthorize("hasRole('ADMIN')")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Sửa lớp học, không đổi được năm học")
     public ApiResponse<LopHocResponse> sua(
             @PathVariable UUID id,
@@ -86,8 +84,7 @@ public class LopHocController {
      * hơn việc dùng đúng mã 204 ở đúng một endpoint.
      */
     @DeleteMapping("/{id}")
-    // SPRINT 1: doi quyen -> @PreAuthorize("hasRole('ADMIN')")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xoá lớp học, chặn nếu lớp đã có thiếu nhi ghi danh")
     public ApiResponse<Void> xoa(@PathVariable UUID id) {
         lopHocService.xoa(id);

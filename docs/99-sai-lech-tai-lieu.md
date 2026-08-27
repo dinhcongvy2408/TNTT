@@ -450,3 +450,118 @@ Số câu SELECT sinh ra: 1
 Nếu để mặc định (`@ManyToOne` là EAGER) hoặc LAZY mà quên `JOIN FETCH`, con số
 sẽ là 1 + 6 + 6 = 13, và tăng tuyến tính theo số lớp. Với một xứ đoàn 40 lớp thì
 đó là 81 câu truy vấn cho một lần mở màn hình.
+
+---
+
+## G. Sprint 1 — Xác thực và phân quyền
+
+### G1. Bảng `refresh_token` — bổ sung, migration V5
+
+`docs/04` quy định `POST /auth/logout` phải "thu hồi refresh token", nhưng
+`schema.sql` gốc không có bảng nào để lưu token. Không có nơi lưu thì không thu
+hồi được.
+
+Hai cách:
+
+| Cách | Vấn đề |
+|---|---|
+| Refresh token là JWT tự chứa | Không vô hiệu hoá được trước hạn. Kẻ lấy được token vẫn dùng đủ 7 ngày dù người dùng đã bấm đăng xuất VÀ đổi mật khẩu. |
+| Lưu vào bảng, token là chuỗi ngẫu nhiên | Mỗi lần làm mới phải tra DB. |
+
+**Đã chọn cách 2.** Refresh token chỉ dùng vài lần mỗi ngày nên chi phí tra DB
+không đáng kể, còn khả năng thu hồi thì bắt buộc phải có với hệ thống giữ hồ sơ
+trẻ em.
+
+**Lưu bản băm SHA-256, không lưu token gốc.** Cùng lý do với mật khẩu: backup
+thất lạc hay lộ quyền đọc DB thì kẻ đọc được vẫn không đăng nhập thay ai được.
+Dùng SHA-256 chứ không BCrypt — ngược với mật khẩu — vì token đã là 32 byte
+ngẫu nhiên, không có từ điển nào dò nổi, mà BCrypt thì cố tình chậm.
+
+### G2. Hai loại token, hai thiết kế khác nhau
+
+|  | Access token | Refresh token |
+|---|---|---|
+| Dạng | JWT có chữ ký | chuỗi ngẫu nhiên 256 bit |
+| Sống | 30 phút | 7 ngày |
+| Server lưu | không | có, dạng băm |
+| Thu hồi được | **không** | **có** |
+| Nằm ở đâu | biến JavaScript | cookie HttpOnly |
+
+Access token không lưu ở server vì nó đi kèm MỌI request — bắt tra DB mỗi lần
+là mất đúng cái lợi của JWT. Đổi lại nó không thu hồi được, nên chỉ sống 30
+phút.
+
+**Refresh token có XOAY VÒNG:** mỗi lần làm mới, token cũ bị thu hồi và cấp
+token mới. Lợi ích không hiển nhiên: nếu token bị đánh cắp và kẻ trộm dùng
+trước, thì lần làm mới kế tiếp của người dùng thật sẽ thất bại — họ bị đăng
+xuất bất thường và **biết** có chuyện. Không xoay vòng thì cả hai bên cùng dùng
+êm ru suốt 7 ngày.
+
+### G3. Bắt đổi mật khẩu — ép ở BACKEND, không chỉ chuyển hướng ở frontend
+
+`docs/02` bước 2: mật khẩu tạm phải đổi ở lần đăng nhập đầu. Nếu chỉ để frontend
+chuyển hướng thì ai gọi thẳng API vẫn dùng được cả hệ thống bằng mật khẩu tạm —
+mà mật khẩu tạm thường được nhắn qua Zalo và nằm lại đó mãi mãi.
+
+`JwtAuthenticationFilter` chặn mọi đường dẫn trừ `/auth/me`,
+`/auth/doi-mat-khau`, `/auth/logout` và `/health`, trả 403 với
+`errorCode = CAN_DOI_MAT_KHAU`.
+
+### G4. Không dùng `UserDetailsService` — có chủ đích
+
+Checklist Sprint 1 ban đầu ghi "viết `UserDetailsService` đọc từ bảng
+`nguoi_dung`". **Đã bỏ ý đó.**
+
+`UserDetailsService` + `AuthenticationManager` là bộ đôi phục vụ form login theo
+session: Spring gọi `loadUserByUsername`, so mật khẩu, tạo session. Hệ thống này
+xác thực bằng JWT — `AuthService` so mật khẩu trực tiếp bằng `PasswordEncoder`,
+còn danh tính từng request do `JwtAuthenticationFilter` dựng từ token. Thêm
+`UserDetailsService` vào chỉ là một tầng gián tiếp không ai gọi tới.
+
+Vì vậy dòng `spring.autoconfigure.exclude` cho
+`UserDetailsServiceAutoConfiguration` được **giữ lại** (không có nó thì Spring
+Boot tự tạo user `user` kèm mật khẩu ngẫu nhiên in ra log, dễ nhầm là mật khẩu
+admin thật).
+
+### G5. Thông báo đăng nhập thất bại phải GIỐNG HỆT nhau
+
+"Email hoặc mật khẩu không đúng" dùng cho cả ba trường hợp: không có tài khoản,
+sai mật khẩu, tài khoản bị khoá.
+
+Tách ra thành "email không tồn tại" / "mật khẩu sai" là bất kỳ ai cũng dò được
+danh sách email có thật trong hệ thống chỉ bằng cách thử. Với 150 huynh trưởng
+thì đó là danh sách người thật kèm địa chỉ liên lạc thật.
+
+Có test khoá chặt điều này: `AuthServiceTest.khongLoRaTaiKhoanNaoCoThat` so hai
+chuỗi thông báo phải bằng nhau.
+
+### G6. Frontend gộp chung một lần làm mới token
+
+Màn hình điểm danh có thể bắn 5 request cùng lúc. Token vừa hết hạn thì cả 5
+cùng nhận 401 và cùng gọi `/auth/refresh`. Vì backend XOAY VÒNG token, lần
+refresh đầu thu hồi token cũ nên 4 lần sau thất bại — người dùng bị đăng xuất
+oan giữa buổi điểm danh.
+
+`services/http.ts` giữ một biến `dangLamMoi` chứa lời hứa của lần làm mới đang
+chạy, để 5 request cùng chờ MỘT lần làm mới.
+
+### G7. Món nợ đã trả
+
+| Nợ | Trạng thái |
+|---|---|
+| 8 chỗ `@PreAuthorize("permitAll()")` tạm | Đã đổi: đọc là `isAuthenticated()`, ghi là `hasRole('ADMIN')` |
+| `SecurityConfig` mở toàn bộ | Đã khoá, mặc định `anyRequest().authenticated()` |
+| `auditorProvider()` luôn trả rỗng | Đã đọc từ `SecurityContextHolder`; `nguoi_tao_id` hết NULL |
+| `app.jwt.secret` không ràng buộc | Đã thêm `@NotBlank` + tối thiểu 64 ký tự |
+| Chưa có test mật khẩu admin | `MatKhauAdminTest` đọc thẳng file V4 và đối chiếu hash |
+
+### G8. Vẫn còn nợ — Sprint 3
+
+- `GET /lop/cua-toi` và lọc `GET /lop` theo phân công (mục F4). Sprint 1 đã cho
+  biết "ai đang gọi", nhưng còn thiếu bảng `phan_cong`.
+- Ma trận phân quyền ở `docs/02` phân biệt `KHOI_TRUONG` xem được ngành mình,
+  `HUYNH_TRUONG` xem được lớp mình. Hiện mọi tài khoản đã đăng nhập đều đọc
+  được toàn bộ danh sách lớp.
+- Bảng `nhat_ky_he_thong` chưa được ghi (CLAUDE.md mục 6). `nguoi_tao_id` /
+  `nguoi_cap_nhat_id` mới là một nửa yêu cầu.
+- Chưa có tác vụ dọn `refresh_token` hết hạn. Bảng sẽ phình dần. Sprint 8.

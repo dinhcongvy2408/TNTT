@@ -47,7 +47,7 @@ public class NamHocController {
     private final NamHocService namHocService;
 
     @GetMapping
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Danh sách năm học, mới nhất trước")
     public ApiResponse<java.util.List<NamHocResponse>> danhSach() {
         return ApiResponse.ok(namHocService.layTatCa());
@@ -62,7 +62,7 @@ public class NamHocController {
      * "chưa có". Frontend phân biệt được hai chuyện đó.
      */
     @GetMapping("/hien-tai")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Năm học đang hoạt động, null nếu chưa có")
     public ApiResponse<NamHocResponse> hienTai() {
         return namHocService.layNamHocHienTai()
@@ -73,8 +73,7 @@ public class NamHocController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    // SPRINT 1: doi quyen -> @PreAuthorize("hasRole('ADMIN')")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo năm học mới, trạng thái CHUAN_BI")
     public ApiResponse<NamHocResponse> tao(@Valid @RequestBody TaoNamHocRequest request) {
         return ApiResponse.ok(namHocService.taoMoi(request), "Đã tạo năm học");
@@ -87,16 +86,14 @@ public class NamHocController {
      * sao phải thêm.
      */
     @PatchMapping("/{id}/kich-hoat")
-    // SPRINT 1: doi quyen -> @PreAuthorize("hasRole('ADMIN')")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Kích hoạt năm học: CHUAN_BI sang DANG_HOAT_DONG")
     public ApiResponse<NamHocResponse> kichHoat(@PathVariable UUID id) {
         return ApiResponse.ok(namHocService.kichHoat(id), "Đã kích hoạt năm học");
     }
 
     @PatchMapping("/{id}/ket-thuc")
-    // SPRINT 1: doi quyen -> @PreAuthorize("hasRole('ADMIN')")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Kết thúc năm học, dữ liệu thành chỉ đọc")
     public ApiResponse<NamHocResponse> ketThuc(@PathVariable UUID id) {
         return ApiResponse.ok(namHocService.ketThuc(id), "Đã kết thúc năm học");

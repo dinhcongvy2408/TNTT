@@ -39,3 +39,14 @@ logging:
     # org.hibernate.orm.jdbc.bind: TRACE
   pattern:
     console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%-5level) %clr(%-40.40logger{39}){cyan} %msg%n"
+
+# ---------------- JWT ở môi trường DEV ----------------
+# Khoá này CHỈ dùng ở máy cá nhân và nằm công khai trong repo — coi như đã lộ.
+# Production KHÔNG có giá trị mặc định (xem application-prod.yml): thiếu biến
+# môi trường APP_JWT_SECRET là app không khởi động, cố ý như vậy.
+#
+# Đổi khoá này thì mọi access token đang lưu hành thành không hợp lệ ngay lập
+# tức — đó là cách "đăng xuất toàn bộ hệ thống" khi cần.
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:khoa_ky_chi_dung_o_may_ca_nhan_khong_bao_gio_dung_o_production_2026}

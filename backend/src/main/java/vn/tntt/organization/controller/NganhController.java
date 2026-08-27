@@ -29,7 +29,7 @@ public class NganhController {
     private final NganhService nganhService;
 
     @GetMapping
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Danh sách ngành, sắp theo thứ tự chuyển cấp")
     public ApiResponse<List<NganhResponse>> danhSach() {
         return ApiResponse.ok(nganhService.layTatCa());
@@ -37,8 +37,7 @@ public class NganhController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    // SPRINT 1: doi quyen -> @PreAuthorize("hasRole('ADMIN')")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo ngành mới, hiếm dùng vì 5 ngành chuẩn đã có sẵn")
     public ApiResponse<NganhResponse> tao(@Valid @RequestBody TaoNganhRequest request) {
         return ApiResponse.ok(nganhService.taoMoi(request), "Đã tạo ngành");

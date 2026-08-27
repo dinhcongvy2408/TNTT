@@ -3,6 +3,11 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
 import { BoCucChinh } from '@/components/layout/BoCucChinh'
 import { TrangChuaLam } from '@/components/TrangChuaLam'
+import { TrangKhongTimThay } from '@/components/TrangKhongTimThay'
+import { AuthProvider } from '@/features/auth/AuthProvider'
+import { CanDangNhap } from '@/features/auth/CanDangNhap'
+import { TrangDangNhap } from '@/features/auth/TrangDangNhap'
+import { TrangDoiMatKhau } from '@/features/auth/TrangDoiMatKhau'
 import { TrangChu } from '@/features/trang-chu/TrangChu'
 import { TrangKiemTra } from '@/features/health/TrangKiemTra'
 import { TrangNamHoc } from '@/features/nam-hoc/TrangNamHoc'
@@ -15,53 +20,63 @@ import { TrangLopHoc } from '@/features/lop-hoc/TrangLopHoc'
  * src/features/<tên-module>/ theo CLAUDE.md mục 5, nên khi thêm sprint mới
  * ta chỉ thay đúng một dòng <Route> ở đây.
  *
- * Route được LỒNG trong <Route element={<BoCucChinh />}>: mọi route con hiện
- * ra ở chỗ <Outlet/> bên trong bố cục, nên thanh tiêu đề và thanh điều hướng
- * không bị dựng lại mỗi lần chuyển màn hình.
+ * Ba tầng lồng nhau, mỗi tầng một việc:
+ *   <AuthProvider>   biết ai đang đăng nhập
+ *     <CanDangNhap>  chặn người chưa đăng nhập
+ *       <BoCucChinh> khung giao diện chung
  */
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route element={<BoCucChinh />}>
-            <Route path="/" element={<TrangChu />} />
+        <AuthProvider>
+          <Routes>
+            {/* Đăng nhập nằm NGOÀI mọi tầng chặn và ngoài bố cục chính:
+                chưa đăng nhập thì chưa được đi đâu, thanh điều hướng dưới
+                đáy không có lý do tồn tại. */}
+            <Route path="/dang-nhap" element={<TrangDangNhap />} />
 
-            <Route
-              path="/diem-danh"
-              element={
-                <TrangChuaLam
-                  tenManHinh="Điểm danh"
-                  sprint={5}
-                  moTa="Điểm danh đi lễ và đi học theo từng lớp, từng buổi Chủ Nhật. Cần có ghi danh của Sprint 5 trước."
+            <Route element={<CanDangNhap />}>
+              <Route element={<BoCucChinh />}>
+                <Route path="/" element={<TrangChu />} />
+                <Route path="/nam-hoc" element={<TrangNamHoc />} />
+                <Route path="/lop-hoc" element={<TrangLopHoc />} />
+                <Route path="/doi-mat-khau" element={<TrangDoiMatKhau />} />
+                <Route path="/kiem-tra" element={<TrangKiemTra />} />
+
+                <Route
+                  path="/diem-danh"
+                  element={
+                    <TrangChuaLam
+                      tenManHinh="Điểm danh"
+                      sprint={5}
+                      moTa="Điểm danh đi lễ và đi học theo từng lớp, từng buổi Chủ Nhật. Cần có ghi danh của Sprint 5 trước."
+                    />
+                  }
                 />
-              }
-            />
-
-            <Route
-              path="/thieu-nhi"
-              element={
-                <TrangChuaLam
-                  tenManHinh="Hồ sơ thiếu nhi"
-                  sprint={4}
-                  moTa="Danh sách và hồ sơ từng em, kèm bí tích đã lãnh nhận và nhập từ file Excel."
+                <Route
+                  path="/thieu-nhi"
+                  element={
+                    <TrangChuaLam
+                      tenManHinh="Hồ sơ thiếu nhi"
+                      sprint={4}
+                      moTa="Danh sách và hồ sơ từng em, kèm bí tích đã lãnh nhận và nhập từ file Excel."
+                    />
+                  }
                 />
-              }
-            />
 
-            <Route path="/lop-hoc" element={<TrangLopHoc />} />
+                {/* Trang 404 thật, không còn lặng lẽ đá về trang chủ.
+                    Đá về trang chủ khiến người gõ sai URL tưởng mình bấm
+                    nhầm nút, và giấu mất lỗi link hỏng khi ta gửi đường dẫn
+                    cho nhau. */}
+                <Route path="*" element={<TrangKhongTimThay />} />
+              </Route>
+            </Route>
 
-            <Route path="/nam-hoc" element={<TrangNamHoc />} />
-
-            <Route path="/kiem-tra" element={<TrangKiemTra />} />
-
-            {/* Sprint 1 sẽ thêm /dang-nhap NGOÀI bố cục này — trang đăng nhập
-                không có thanh điều hướng, vì lúc đó chưa đăng nhập thì chưa
-                được đi đâu cả. */}
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
+            {/* Route bắt mọi thứ còn lại khi CHƯA đăng nhập. */}
+            <Route path="*" element={<Navigate to="/dang-nhap" replace />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   )
