@@ -12,6 +12,16 @@ spring:
   application:
     name: tntt-backend
 
+  # ---------------- Tắt tài khoản in-memory của Spring Boot ----------------
+  # Có spring-boot-starter-security trong classpath mà chưa có UserDetailsService,
+  # Spring Boot tự tạo một user tên "user" kèm mật khẩu ngẫu nhiên và IN RA LOG
+  # mỗi lần khởi động. Ta đã có tài khoản thật trong bảng nguoi_dung, nên cái
+  # tài khoản giả đó chỉ gây nhầm: người đọc log sẽ tưởng đó là mật khẩu admin.
+  # Sprint 1 viết UserDetailsService đọc từ DB thì bỏ dòng exclude này đi.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
   profiles:
     # Đổi bằng biến môi trường SPRING_PROFILES_ACTIVE khi deploy
     active: ${SPRING_PROFILES_ACTIVE:dev}

@@ -94,6 +94,19 @@
             <version>${mapstruct.version}</version>
         </dependency>
 
+        <!-- ============ Spring Security ============
+             Thêm ở lần rà soát cuối Sprint 0, SỚM hơn Sprint 1 một nhịp,
+             để handler AccessDeniedException trong GlobalExceptionHandler
+             biên dịch và chạy được. Xem docs/99 mục E2 để biết vì sao thiếu
+             handler đó thì lỗi 403 biến thành 500.
+
+             SecurityConfig hiện để permitAll toàn bộ — chưa khoá endpoint
+             nào. Việc khoá là của Sprint 1, cùng với JWT.        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
         <!-- ============ Test ============ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -104,8 +117,8 @@
         <!-- ==================================================================
              THÊM Ở CÁC SPRINT SAU (bỏ comment khi tới sprint tương ứng):
 
-             Sprint 1  spring-boot-starter-security
-                       io.jsonwebtoken:jjwt-api / jjwt-impl / jjwt-jackson
+             Sprint 1  io.jsonwebtoken:jjwt-api / jjwt-impl / jjwt-jackson
+                       (spring-boot-starter-security đã thêm ở trên)
              Sprint 3  org.apache.poi:poi-ooxml            (đọc/ghi Excel)
              Sprint 7  spring-boot-starter-websocket
              Test      org.testcontainers:postgresql

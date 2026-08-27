@@ -244,15 +244,45 @@ từ chối mật khẩu sai. Không sửa V3 vì Flyway ghi checksum của file
 > **Bài học chung:** một credential chép từ tài liệu mà chưa ai đăng nhập thử
 > thì chưa được coi là đúng. Sprint 1 nên có một test tự động cho việc này.
 
-### E2. `@PreAuthorize` bị từ chối sẽ trả 500 thay vì 403 — Sprint 1
+### E2. `@PreAuthorize` bị từ chối sẽ trả 500 thay vì 403 — ĐÃ SỬA
 
 `@PreAuthorize` kiểm quyền lúc **gọi method**, tức bên trong DispatcherServlet.
 `ExceptionTranslationFilter` của Spring Security nằm ở tầng filter, đã chạy
 xong từ trước, nên không bắt được. Exception rơi thẳng vào
 `GlobalExceptionHandler` và bị lưới `Exception.class` vợt mất → 500.
 
-Đã ghi khối code sẵn sàng dùng ngay trong `GlobalExceptionHandler` (mục 4b),
-bỏ comment khi thêm `spring-boot-starter-security`.
+**Đã sửa.** Thêm `spring-boot-starter-security` sớm hơn Sprint 1 một nhịp, kèm
+`security/config/SecurityConfig.java` để `@PreAuthorize` hoạt động được, và bật
+handler ở `GlobalExceptionHandler` mục 4b.
+
+`SecurityConfig` hiện **để `permitAll` toàn bộ** — nó chưa phải hàng rào bảo vệ.
+Nó có mặt vì hai lý do, cả hai đều là "không có nó thì hỏng ngầm":
+
+1. `@EnableMethodSecurity` là thứ bật `@PreAuthorize`. Thiếu annotation này,
+   mọi `@PreAuthorize` bị bỏ qua **hoàn toàn trong im lặng** — nguy hiểm hơn
+   hẳn việc chưa viết gì, vì nhìn code thì tưởng đã phân quyền.
+2. Có lớp `AccessDeniedException` trong classpath thì handler mới biên dịch được.
+
+Hai điểm phải nhớ khi Sprint 1 khoá endpoint lại:
+
+- `.cors(Customizer.withDefaults())` là bắt buộc. Filter chain của Security chạy
+  **trước** Spring MVC; không khai báo thì nó chặn preflight OPTIONS trước khi
+  MVC kịp trả header CORS.
+- `OPTIONS /**` phải luôn `permitAll`. Trình duyệt gửi preflight **không kèm**
+  header `Authorization`, nên bắt xác thực ở đó là mọi lời gọi từ frontend chết
+  ngay từ bước đầu.
+
+Đã tắt `UserDetailsServiceAutoConfiguration` trong `application.yml`: có
+starter-security mà chưa có `UserDetailsService` thì Spring Boot tự tạo user
+`user` kèm mật khẩu ngẫu nhiên và in ra log mỗi lần khởi động — dễ bị nhầm là
+mật khẩu admin thật. Sprint 1 viết `UserDetailsService` đọc từ DB thì bỏ dòng
+exclude đó đi.
+
+**Test chốt chặn:** `GlobalExceptionHandlerAccessDeniedTest` kiểm chứng cả
+`AccessDeniedException` lẫn `AuthorizationDeniedException` (lớp con, chính là
+thứ `@PreAuthorize` ném ra) đều thành 403 + `ACCESS_DENIED`. Đã thử gỡ handler
+ra để chắc test không phải test giả: nó đỏ đúng như mong đợi,
+`Status expected:<403> but was:<500>`.
 
 Phân biệt: `AuthenticationException` (chưa đăng nhập, token hỏng) thì **không**
 tới được `@RestControllerAdvice` — nó bị chặn ở tầng filter và xử lý bằng

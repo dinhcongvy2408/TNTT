@@ -134,19 +134,24 @@ Trước khi implement một module, đọc file tương ứng trong `docs/`:
       tài khoản không đăng nhập được — đã sửa ở **Flyway V4**), bỏ `Content-Type`
       cứng ở axios, `bocData` không còn ép kiểu `as T`, thêm `@Valid` cho
       `AppProperties.Jwt`, xoá thư mục trùng `tntt-docs/`, đổi nhánh `master` →
-      `main`, thêm Maven wrapper và CI GitHub Actions.
+      `main`, thêm Maven wrapper và CI GitHub Actions. Thêm Spring Security ở
+      chế độ `permitAll` + `@EnableMethodSecurity` để handler 403 chạy được
+      (chưa khoá endpoint nào — việc đó là của Sprint 1).
       Chi tiết và lý do: `docs/99-sai-lech-tai-lieu.md` mục E.
 - [ ] Sprint 1 — Auth & phân quyền
       <br>**Việc bắt buộc, đã ghi sẵn lý do trong code:**
-      <br>1. Bỏ comment handler `AccessDeniedException` ở `GlobalExceptionHandler`
-      mục 4b — không làm thì "thiếu quyền" trả 500 chứ không phải 403.
+      <br>1. `SecurityConfig` đang `permitAll` TOÀN BỘ — thay
+      `.anyRequest().permitAll()` bằng danh sách cụ thể, và chèn
+      `JwtAuthenticationFilter`. Giữ `OPTIONS /**` permitAll (preflight không
+      kèm header Authorization) và `/actuator/health` permitAll.
       <br>2. Thêm `@NotBlank` + độ dài tối thiểu 64 cho `app.jwt.secret`
       (`AppProperties.Jwt`) — mặc định đang là chuỗi rỗng.
       <br>3. `JpaAuditingConfig.auditorProvider()` đang luôn trả rỗng — đổi để
       đọc user id từ `SecurityContextHolder`.
       <br>4. Viết test tự động kiểm chứng mật khẩu tài khoản admin đăng nhập
       được. Đây chính là thứ đáng lẽ bắt được lỗi hash ở V3.
-      <br>5. `/actuator/health` phải `permitAll`, các endpoint khác chặn hết.
+      <br>5. Viết `UserDetailsService` đọc từ bảng `nguoi_dung`, rồi bỏ dòng
+      `spring.autoconfigure.exclude` trong `application.yml`.
 - [ ] Sprint 2 — Tổ chức (năm học, ngành, lớp)
 - [ ] Sprint 3 — Nhân sự & phân công
 - [ ] Sprint 4 — Hồ sơ thiếu nhi + bí tích + import Excel

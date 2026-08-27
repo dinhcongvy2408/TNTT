@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -149,36 +150,42 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error("Không tìm thấy đường dẫn yêu cầu", "ENDPOINT_NOT_FOUND"));
     }
+    // ---------------------------------------------------------------
+    // 4b. Lỗi phân quyền của Spring Security
+    // ---------------------------------------------------------------
 
-    // ---------------------------------------------------------------
-    // 4b. [SPRINT 1 — BẮT BUỘC LÀM] Lỗi phân quyền của Spring Security
-    // ---------------------------------------------------------------
-    //
-    // CÁI BẪY: @PreAuthorize kiểm quyền ở lúc GỌI METHOD, tức là BÊN TRONG
-    // DispatcherServlet. Nên AuthorizationDeniedException nó ném ra KHÔNG bị
-    // ExceptionTranslationFilter của Spring Security bắt (filter đó nằm ngoài,
-    // và đã chạy xong từ trước) — nó rơi thẳng vào @RestControllerAdvice này
-    // và bị lưới Exception.class ở mục 5 vợt mất.
-    //
-    // Hậu quả: "bạn không có quyền" biến thành 500 "Hệ thống gặp sự cố".
-    // Frontend không phân biệt được thiếu quyền với server sập, còn ta thì
-    // thấy log ERROR kèm stacktrace cho một tình huống hoàn toàn bình thường.
-    //
-    // Khi thêm spring-boot-starter-security ở Sprint 1, bỏ comment khối này:
-    //
-    // @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    // public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
-    //         org.springframework.security.access.AccessDeniedException ex) {
-    //     log.warn("Từ chối truy cập: {}", ex.getMessage());
-    //     return ResponseEntity.status(HttpStatus.FORBIDDEN)
-    //             .body(ApiResponse.error("Bạn không có quyền thực hiện thao tác này",
-    //                                     "ACCESS_DENIED"));
-    // }
-    //
-    // Lưu ý: AuthorizationDeniedException (Spring Security 6.x) là lớp CON của
-    // AccessDeniedException, nên một handler là đủ cho cả hai.
-    // Còn AuthenticationException (chưa đăng nhập / token hỏng) thì KHÔNG tới
-    // được đây — nó bị chặn ở tầng filter, xử lý bằng AuthenticationEntryPoint.
+    /**
+     * 403 — đã xác thực nhưng không đủ quyền, do {@code @PreAuthorize} chặn.
+     *
+     * <p><b>Vì sao handler này bắt buộc phải có.</b> {@code @PreAuthorize}
+     * kiểm quyền ở lúc GỌI METHOD, tức là BÊN TRONG DispatcherServlet. Lúc
+     * đó {@code ExceptionTranslationFilter} của Spring Security — thứ bình
+     * thường biến {@code AccessDeniedException} thành 403 — đã chạy xong từ
+     * trước và nằm ngoài, nên nó không bắt được gì cả.
+     *
+     * <p>Exception vì thế rơi thẳng vào {@code @RestControllerAdvice} này.
+     * Không có handler riêng thì lưới {@code Exception.class} ở mục 5 vợt
+     * mất, và "bạn không có quyền" biến thành 500 "Hệ thống gặp sự cố":
+     * frontend không phân biệt được thiếu quyền với server sập, còn log thì
+     * đầy ERROR kèm stacktrace cho một tình huống hoàn toàn bình thường.
+     *
+     * <p><b>Phạm vi.</b> {@code AuthorizationDeniedException} của Spring
+     * Security 6 là lớp con của {@code AccessDeniedException}, nên một
+     * handler đủ cho cả hai. Còn {@code AuthenticationException} (chưa đăng
+     * nhập, token hỏng) KHÔNG tới được đây — nó bị chặn ở tầng filter và sẽ
+     * do {@code AuthenticationEntryPoint} xử lý ở Sprint 1.
+     *
+     * <p>Ta KHÔNG đưa {@code ex.getMessage()} ra ngoài: câu đó nêu đích danh
+     * biểu thức quyền đã thất bại, tức là tiết lộ cấu trúc phân quyền cho
+     * người vừa bị từ chối.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Từ chối truy cập: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(
+                        "Bạn không có quyền thực hiện thao tác này", "ACCESS_DENIED"));
+    }
 
     // ---------------------------------------------------------------
     // 5. Lưới an toàn cuối cùng
