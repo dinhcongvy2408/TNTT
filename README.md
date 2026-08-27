@@ -1,4 +1,4 @@
-| Maven | không cần cài — dùng `./mvnw` trong repo | `./mvnw -v` |# Hệ thống Quản lý Xứ đoàn Thiếu Nhi Thánh Thể
+# Hệ thống Quản lý Xứ đoàn Thiếu Nhi Thánh Thể
 
 Web application quản lý và vận hành Xứ đoàn Thiếu Nhi Thánh Thể của giáo xứ:
 hồ sơ thiếu nhi, bí tích, điểm danh hằng tuần, điểm số, chuyển cấp, và phiếu
