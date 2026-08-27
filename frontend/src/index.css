@@ -31,9 +31,18 @@
 
   body {
     @apply bg-slate-50 text-slate-900 antialiased;
-    /* Tôn trọng vùng tai thỏ / thanh home của điện thoại */
-    padding: env(safe-area-inset-top) env(safe-area-inset-right)
-      env(safe-area-inset-bottom) env(safe-area-inset-left);
+
+    /* Chỉ chèn lề TRÁI/PHẢI cho vùng bo góc màn hình khi xoay ngang.
+       Lề TRÊN/DƯỚI cố ý KHÔNG đặt ở đây: thanh tiêu đề và thanh điều hướng
+       tự lo phần của mình (pt-[env(safe-area-inset-top)] ở header,
+       pb-[env(safe-area-inset-bottom)] ở nav).
+
+       Nếu đặt padding dọc ở body, phần tử min-h-dvh bên trong sẽ CAO HƠN
+       màn hình đúng bằng phần padding đó — trang lúc nào cũng cuộn được
+       vài chục pixel dù nội dung ngắn, và nền thanh tiêu đề hở một vệt
+       ở mép trên. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   /* iOS phóng to cả trang khi focus vào input có cỡ chữ dưới 16px.

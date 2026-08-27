@@ -138,6 +138,11 @@ Trước khi implement một module, đọc file tương ứng trong `docs/`:
       chế độ `permitAll` + `@EnableMethodSecurity` để handler 403 chạy được
       (chưa khoá endpoint nào — việc đó là của Sprint 1).
       Chi tiết và lý do: `docs/99-sai-lech-tai-lieu.md` mục E.
+- [x] **Khung giao diện** (27/08/2026): bố cục mobile-first
+      (`components/layout/BoCucChinh` + `ThanhDieuHuongDuoi`), route lồng nhau
+      qua `<Outlet/>`, Trang chủ có dải trạng thái hệ thống, và `TrangChuaLam`
+      cho màn hình chưa xây. Chưa có màn hình nghiệp vụ nào — đó là việc của
+      từng sprint.
 - [ ] Sprint 1 — Auth & phân quyền
       <br>**Việc bắt buộc, đã ghi sẵn lý do trong code:**
       <br>1. `SecurityConfig` đang `permitAll` TOÀN BỘ — thay

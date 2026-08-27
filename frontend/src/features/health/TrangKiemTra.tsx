@@ -32,16 +32,7 @@ export function TrangKiemTra() {
   })
 
   return (
-    <main className="mx-auto max-w-md px-4 py-10">
-      <header className="mb-8 text-center">
-        <h1 className="text-xl font-bold text-xudoan-700">
-          Xứ đoàn Thiếu Nhi Thánh Thể
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Hệ thống quản lý &middot; Sprint 0
-        </p>
-      </header>
-
+    <div>
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-slate-800">Trạng thái hệ thống</h2>
@@ -79,7 +70,7 @@ export function TrangKiemTra() {
         Nếu thấy lỗi kết nối: kiểm tra backend đã chạy ở cổng 8080 chưa,
         và <code>docker compose ps</code> xem PostgreSQL còn sống không.
       </p>
-    </main>
+    </div>
   )
 }
 
