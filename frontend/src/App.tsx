@@ -6,6 +6,7 @@ import { TrangChuaLam } from '@/components/TrangChuaLam'
 import { TrangChu } from '@/features/trang-chu/TrangChu'
 import { TrangKiemTra } from '@/features/health/TrangKiemTra'
 import { TrangNamHoc } from '@/features/nam-hoc/TrangNamHoc'
+import { TrangLopHoc } from '@/features/lop-hoc/TrangLopHoc'
 
 /**
  * Gốc của ứng dụng: chỉ lắp ráp provider và khai báo route.
@@ -48,16 +49,7 @@ export default function App() {
               }
             />
 
-            <Route
-              path="/lop-hoc"
-              element={
-                <TrangChuaLam
-                  tenManHinh="Lớp học"
-                  sprint={2}
-                  moTa="Năm học, ngành và danh sách lớp. Đây là nền của mọi module sau, vì mọi dữ liệu đều gắn với một năm học."
-                />
-              }
-            />
+            <Route path="/lop-hoc" element={<TrangLopHoc />} />
 
             <Route path="/nam-hoc" element={<TrangNamHoc />} />
 

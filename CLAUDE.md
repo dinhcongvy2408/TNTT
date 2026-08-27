@@ -157,13 +157,21 @@ Trước khi implement một module, đọc file tương ứng trong `docs/`:
       được. Đây chính là thứ đáng lẽ bắt được lỗi hash ở V3.
       <br>5. Viết `UserDetailsService` đọc từ bảng `nguoi_dung`, rồi bỏ dòng
       `spring.autoconfigure.exclude` trong `application.yml`.
-- [~] Sprint 2 — Tổ chức (năm học, ngành, lớp) — ĐANG LÀM
-      <br>[x] Năm học: entity, service, API, màn hình /nam-hoc. Máy trạng thái
-      CHUAN_BI to DANG_HOAT_DONG to DA_KET_THUC, một chiều.
-      Thêm PATCH /nam-hoc/id/kich-hoat ngoài docs/04 — lý do ở docs/99 mục F1.
-      <br>[ ] Ngành: đã seed sẵn ở V2, cần API đọc.
-      <br>[ ] Lớp học: CRUD, tên lớp duy nhất trong một năm học.
+- [x] **Sprint 2 — HOÀN TẤT** (27/08/2026): năm học, ngành, lớp học.
+      <br>Năm học: máy trạng thái một chiều CHUAN_BI to DANG_HOAT_DONG to
+      DA_KET_THUC, màn hình /nam-hoc. Thêm PATCH /nam-hoc/id/kich-hoat ngoài
+      docs/04 — docs/99 mục F1.
+      <br>Ngành: API đọc và tạo, 5 ngành chuẩn đã seed ở V2.
+      <br>Lớp học: CRUD đầy đủ, màn hình /lop-hoc. Ba hàng rào chống mất dữ
+      liệu (docs/99 mục F5): năm học đã kết thúc là chỉ đọc, không đổi năm học
+      của lớp, không xoá lớp đang có ghi danh vì FK là ON DELETE CASCADE.
+      <br>Quan hệ LAZY + JOIN FETCH, đã đo: 1 câu SQL cho danh sách lớp
+      (docs/99 mục F6).
+      <br>**Nợ sang Sprint 3:** GET /lop/cua-toi và lọc lớp theo quyền của
+      người đăng nhập — docs/99 mục F4.
 - [ ] Sprint 3 — Nhân sự & phân công
+      <br>**Nợ từ Sprint 2:** thêm `GET /lop/cua-toi` và lọc `GET /lop` theo
+      lớp được phân công. docs/02 quy định huynh trưởng chỉ xem được lớp mình.
 - [ ] Sprint 4 — Hồ sơ thiếu nhi + bí tích + import Excel
 - [ ] Sprint 5 — Ghi danh & điểm danh
 - [ ] Sprint 6 — Điểm số & chuyển cấp

@@ -49,10 +49,10 @@ const CAC_LOI_TAT: LoiTat[] = [
   {
     duongDan: '/lop-hoc',
     nhan: 'Lớp học',
-    moTa: 'Năm học, ngành, danh sách lớp',
+    moTa: 'Danh sách lớp theo năm học và ngành',
     icon: 'lop-hoc',
     sprint: 2,
-    daLam: false,
+    daLam: true,
   },
   {
     duongDan: '/kiem-tra',

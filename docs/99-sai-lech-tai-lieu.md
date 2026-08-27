@@ -396,3 +396,57 @@ chứ không bỏ trống — bỏ trống thì không phân biệt được "đ
 ```bash
 grep -rn "SPRINT 1: doi quyen" backend/
 ```
+
+### F4. `GET /lop/cua-toi` và "lọc theo quyền" — hoãn sang Sprint 3
+
+`docs/04` liệt kê `GET /lop/cua-toi` (quyền `HUYNH_TRUONG`) và ghi `GET /lop`
+là "tất cả (lọc theo quyền)". Cả hai đều cần biết **ai đang gọi** (Sprint 1) và
+cần bảng `phan_cong` (Sprint 3). Hiện `GET /lop` trả mọi lớp của năm học được
+chọn, không lọc gì.
+
+Đây là món nợ có thật, không phải chuyện nhỏ: docs/02 quy định huynh trưởng chỉ
+được xem lớp mình phụ trách. Ghi vào checklist Sprint 3.
+
+### F5. Ba hàng rào ở `LopHocService` — không có trong đặc tả
+
+Đặc tả chỉ mô tả CRUD. Ba quy tắc dưới đây được thêm vì thiếu chúng thì mất dữ
+liệu thật, không phải chỉ khó chịu.
+
+**a. Năm học `DA_KET_THUC` là chỉ đọc.** docs/02 bước 1 có nói, nhưng docs/99
+mục D3 xếp việc ép quy tắc này sang Sprint 6. Thực tế phải làm ngay ở đây: nếu
+không, admin sửa được lớp của năm cũ và làm lệch dữ liệu lịch sử. Ép ở tầng
+service vì ràng buộc `CHECK` của PostgreSQL không tham chiếu được sang bảng khác.
+
+**b. Không đổi `nam_hoc_id` của một lớp đã tồn tại.** Bảng `ghi_danh` có khoá
+ngoại **ghép** trỏ vào cặp `(id, nam_hoc_id)` của `lop_hoc` (docs/99 mục B1).
+Đổi năm học của lớp là mọi ghi danh cũ trỏ vào một cặp không còn tồn tại;
+PostgreSQL sẽ từ chối và người dùng nhận một lỗi ràng buộc khó hiểu. Chặn sớm ở
+service cho ra câu giải thích rõ ràng. Về nghiệp vụ cũng đúng: "Ấu 1A năm
+2026-2027" và "Ấu 1A năm 2027-2028" là hai lớp khác nhau.
+
+**c. Không xoá lớp đang có ghi danh.** Đây là hàng rào quan trọng nhất.
+Migration V1 khai `ghi_danh.lop_id ... ON DELETE CASCADE`, và
+`diem_danh.ghi_danh_id`, `diem_so.ghi_danh_id` cũng CASCADE tiếp. Một lệnh
+`DELETE` lên lớp có 30 em sẽ xoá sạch 30 ghi danh, toàn bộ điểm danh cả năm và
+toàn bộ điểm số — im lặng, không hỏi lại, không hoàn tác.
+
+Đếm ghi danh bằng native query vì entity `GhiDanh` tới Sprint 5 mới có. Không
+chờ được: cái CASCADE đã nằm trong DB từ V1 rồi.
+
+> Cân nhắc cho Sprint 5: có nên đổi các khoá ngoại đó sang `ON DELETE RESTRICT`
+> để chính DB từ chối, thay vì dựa vào tầng service nhớ kiểm tra? Cần một
+> migration mới.
+
+### F6. Đo thật bài toán N+1
+
+Quan hệ `LopHoc → Nganh` và `LopHoc → NamHoc` khai `FetchType.LAZY`, và truy vấn
+danh sách dùng `JOIN FETCH`. Đã đo bằng cách bật `logging.level.org.hibernate.SQL=DEBUG`
+rồi gọi `GET /lop?namHocId=...` với 6 lớp thuộc 3 ngành:
+
+```
+Số câu SELECT sinh ra: 1
+```
+
+Nếu để mặc định (`@ManyToOne` là EAGER) hoặc LAZY mà quên `JOIN FETCH`, con số
+sẽ là 1 + 6 + 6 = 13, và tăng tuyến tính theo số lớp. Với một xứ đoàn 40 lớp thì
+đó là 81 câu truy vấn cho một lần mở màn hình.
